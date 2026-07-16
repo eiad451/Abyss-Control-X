@@ -1,94 +1,60 @@
 #!/usr/bin/env python3
-"""StickerForgeBot - Auto Setup & Run"""
-import subprocess, sys, os, json, urllib.request, zipfile, io, importlib, logging, asyncio, re, datetime
+import subprocess, sys, os, json, urllib.request, importlib, logging, asyncio, sqlite3
 from pathlib import Path
 
 BASE = Path(__file__).parent
 sys.path.insert(0, str(BASE))
 
-# ─── Auto Install Dependencies ───
-def install_deps():
-    req = BASE / 'requirements.txt'
-    if not req.exists():
-        req.write_text('\n'.join([
-            'aiogram>=3.17.0', 'Pillow>=11.1.0', 'cairosvg>=2.7.1',
-            'numpy>=2.2.3', 'tgcrypto>=1.2.5', 'requests>=2.32.0'
-        ]))
-    missing = []
-    with open(req) as f:
-        for line in f:
-            pkg = line.strip().split('>=')[0].split('=')[0].strip()
-            if pkg and pkg[0].isalpha():
-                try:
-                    importlib.import_module(pkg.replace('-', '_'))
-                except:
-                    missing.append(line.strip())
-    if missing:
-        print('📦 Installing dependencies...')
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', '-r', str(req)])
-        print('  ✓ Dependencies installed')
+REQUIRED = {'aiogram':'aiogram', 'PIL':'Pillow'}
+missing = []
+for imp, pkg in REQUIRED.items():
+    try:
+        importlib.import_module(imp)
+    except:
+        missing.append(pkg)
+if missing:
+    print('📦 Installing dependencies...')
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', '--break-system-packages'] + missing)
+    print('  ✓ Dependencies installed')
 
-# ─── Auto Download Fonts ───
-def download_fonts():
-    fonts_dir = BASE / 'fonts'
-    fonts_dir.mkdir(exist_ok=True)
-    fonts = {
-        'NotoNaskhArabic-VariableFont_wght.ttf':
-        'https://github.com/AhmedrElhamid/NotoNaskhArabic/raw/main/fonts/variable/NotoNaskhArabic%5Bwght%5D.ttf',
-    }
-    fallback = {
-        'NotoNaskhArabic-VariableFont_wght.ttf':
-        'https://github.com/googlefonts/noto-naskh-arabic/raw/main/fonts/variable/NotoNaskhArabic%5Bwght%5D.ttf'
-    }
-    for name, url in {**fonts, **fallback}.items():
-        path = fonts_dir / name
-        if not path.exists():
-            print(f'📥 Downloading {name}...')
-            try:
-                urllib.request.urlretrieve(url, str(path))
-                print(f'  ✓ {name}')
-                break
-            except:
-                continue
+SYSTEM_FONTS = [
+    '/system/fonts/MiSansArabicVF.ttf',
+    '/system/fonts/NotoNaskhArabic-VariableFont_wght.ttf',
+    '/system/fonts/DroidSans.ttf',
+]
+FONTS_DIR = BASE / 'fonts'
+FONTS_DIR.mkdir(exist_ok=True)
+for src in SYSTEM_FONTS:
+    if os.path.exists(src):
+        dst = FONTS_DIR / os.path.basename(src)
+        if not dst.exists():
+            import shutil
+            shutil.copy2(src, str(dst))
+            sz = os.path.getsize(str(dst))
+            print(f'  ✓ Font: {os.path.basename(src)} ({sz//1024}KB)')
+        break
 
-# ─── Config ───
 CONFIG_PATH = BASE / 'config.json'
-
 def load_config():
     if CONFIG_PATH.exists():
         return json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
     return {'bot_token': '', 'admin_ids': []}
-
 def save_config(data):
     CONFIG_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
 
-def get_token():
-    cfg = load_config()
-    if cfg.get('bot_token'):
-        return cfg['bot_token']
+cfg = load_config()
+token = cfg.get('bot_token', '')
+if not token:
     token = input('Enter Bot Token: ').strip()
     if token:
         cfg['bot_token'] = token
         save_config(cfg)
         print('  ✓ Token saved')
-        return token
-    print('  ✗ Token required')
-    sys.exit(1)
+    else:
+        print('  ✗ Token required')
+        sys.exit(1)
 
-# ─── Handlers ───
-from aiogram import Router, F, Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery, InputFile
-from aiogram.filters import Command, StateFilter
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-
-# ─── Database ───
-import sqlite3
 DB_PATH = BASE / 'database.db'
-
 def db():
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
@@ -100,47 +66,37 @@ def db():
     ''')
     conn.commit()
     return conn
+db()
 
-async def add_user_db(id, uname, fn, ln):
-    c = db()
-    c.execute('INSERT OR IGNORE INTO users (id, username, first_name, last_name) VALUES (?,?,?,?)', (id, uname, fn, ln))
-    c.execute('UPDATE users SET last_active=datetime(\'now\'), username=?, first_name=?, last_name=? WHERE id=?', (uname, fn, ln, id))
-    c.commit(); c.close()
+from aiogram import Router, F, Bot, Dispatcher
+from aiogram.types import Message, CallbackQuery, InputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import Command, StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from PIL import Image, ImageDraw, ImageFont
 
-async def is_banned(id):
-    c = db(); u = c.execute('SELECT is_banned FROM users WHERE id=?', (id,)).fetchone(); c.close()
-    return u and u['is_banned'] == 1
+router = Router()
+user_cfg = {}
 
-async def stats():
-    c = db()
-    r = lambda q: c.execute(q).fetchone()['c']
-    s = {'total_users': r('SELECT COUNT(*) FROM users'), 'total_packs': r('SELECT COUNT(*) FROM stickers'), 'total_stickers': r('SELECT COUNT(*) FROM stickers'), 'today_users': r("SELECT COUNT(*) FROM users WHERE date(created_at)=date('now')"), 'today_packs': r("SELECT COUNT(*) FROM stickers WHERE date(created_at)=date('now')")}
-    c.close(); return s
+class S(StatesGroup):
+    text = State(); pack = State(); pack_text = State(); custom = State()
 
-async def all_users():
-    c = db(); u = [dict(r) for r in c.execute('SELECT id, username, first_name, is_banned FROM users ORDER BY created_at DESC').fetchall()]; c.close(); return u
-
-async def save_pack(uid, name, title, count):
-    c = db(); c.execute('INSERT INTO stickers (user_id, pack_name, pack_title, sticker_count) VALUES (?,?,?,?)', (uid, name, title, count)); c.commit(); c.close()
-
-async def ban(uid): c = db(); c.execute('UPDATE users SET is_banned=1 WHERE id=?', (uid,)); c.commit(); c.close()
-async def unban(uid): c = db(); c.execute('UPDATE users SET is_banned=0 WHERE id=?', (uid,)); c.commit(); c.close()
-
-# ─── Sticker Engine ───
 TEMP = BASE / 'temp'; TEMP.mkdir(exist_ok=True)
-FONTS_DIR = BASE / 'fonts'
 
 def get_font(size):
-    for f in ['NotoNaskhArabic-VariableFont_wght.ttf', 'NotoSansArabic-VariableFont_wght.ttf', 'Cairo-VariableFont_slnt,wght.ttf', 'arial.ttf']:
-        p = FONTS_DIR / f
-        if p.exists(): return ImageFont.truetype(str(p), size)
+    for f in sorted(os.listdir(str(FONTS_DIR))):
+        if f.endswith(('.ttf', '.otf')):
+            try:
+                return ImageFont.truetype(str(FONTS_DIR / f), size)
+            except: pass
     return ImageFont.load_default()
 
 def make_sticker(text, cfg):
-    fc, bg, fs, fn = cfg.get('font_color','#ffffff'), cfg.get('bg_color','#1a1a2e'), cfg.get('font_size',200), cfg.get('font_name','NotoNaskhArabic')
+    fc, bg, fs = cfg.get('font_color','#ffffff'), cfg.get('bg_color','#1a1a2e'), cfg.get('font_size',200)
     sw, sc, sh, gr, rc = cfg.get('stroke_width',0), cfg.get('stroke_color','#000'), cfg.get('shadow_enabled',False), cfg.get('gradient_enabled',False), cfg.get('rounded_corners',0)
     gc = cfg.get('gradient_colors', ['#00f3ff','#8b5cf6'])
-
     font = get_font(max(fs, 50))
     dummy = ImageDraw.Draw(Image.new('RGBA',(1,1)))
     lines = text.split('\n')
@@ -148,7 +104,6 @@ def make_sticker(text, cfg):
     tw, th = bbox[2]-bbox[0], (bbox[3]-bbox[1])*len(lines)+(len(lines)-1)*10
     pad = 60
     cw, ch = int(min(max(tw+pad*2, 512),512)), int(min(max(th+pad*2, 512),512))
-
     if gr:
         try:
             c1 = tuple(int(gc[0].lstrip('#')[i:i+2],16) for i in (0,2,4))
@@ -161,13 +116,11 @@ def make_sticker(text, cfg):
                 for x in range(cw): img.putpixel((x,y),(r,g,b,255))
         except: img = Image.new('RGBA', (cw,ch), tuple(int(bg.lstrip('#')[i:i+2],16) for i in (0,2,4))+(255,))
     else: img = Image.new('RGBA', (cw,ch), tuple(int(bg.lstrip('#')[i:i+2],16) for i in (0,2,4))+(255,))
-
     if rc > 0:
         m = Image.new('L', (cw,ch), 0)
         draw = ImageDraw.Draw(m)
         draw.rounded_rectangle((0,0,cw-1,ch-1), rc, fill=255)
         img.putalpha(m)
-
     draw = ImageDraw.Draw(img)
     fcrgb = tuple(int(fc.lstrip('#')[i:i+2],16) for i in (0,2,4))
     scrgb = tuple(int(sc.lstrip('#')[i:i+2],16) for i in (0,2,4))
@@ -181,40 +134,47 @@ def make_sticker(text, cfg):
         if sw > 0: draw.text((tx, ty), l, font=font, fill=tuple(fcrgb), stroke_width=sw, stroke_fill=tuple(scrgb))
         else: draw.text((tx, ty), l, font=font, fill=tuple(fcrgb))
         ty += lh + 10
-
     path = TEMP / f's_{os.urandom(4).hex()}.png'
     img.resize((512,512), Image.LANCZOS).save(str(path))
     return str(path)
 
-# ─── Keyboard ───
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 def mk(rows): return InlineKeyboardMarkup(inline_keyboard=rows)
-main_kb = lambda: mk([[mkb('✨ إنشاء ملصق','create_sticker'), mkb('📦 حزمة','create_pack')],[mkb('❓ مساعدة','help')]])
+def mkb(t, d): return InlineKeyboardButton(text=t, callback_data=d)
+main_kb = lambda: mk([[mkb('✨ إنشاء ملصق','create_sticker'),mkb('📦 حزمة','create_pack')],[mkb('❓ مساعدة','help')]])
 cancel_kb = lambda: mk([[mkb('❌ إلغاء','back_main')]])
-cust_kb = lambda: mk([[mkb('🅰️ الخط','font'),mkb('🎨 اللون','color')],[mkb('🖼 الخلفية','bg'),mkb('📏 الحجم','size')],[mkb('✏️ الحواف','stroke'),mkb('🌓 الظل','shadow')],[mkb('🌈 التدرج','gradient'),mkb('🔘 الزوايا','rounded')],[mkb('👁 معاينة','preview')],[mkb('✅ إنشاء','confirm'),mkb('❌','back_main')]])
+cust_kb = lambda: mk([[mkb('🅰️ الخط','font'),mkb('🎨 اللون','color')],[mkb('🖼 الخلفية','bg'),mkb('📏 الحجم','size')],[mkb('✏️ الحواف','stroke'),mkb('🌓 الظل','shadow')],[mkb('🌈 التدرج','gradient'),mkb('🔘 الزوايا','rounded')],[mkb('👁 معاينة','preview'),mkb('✅ إنشاء','confirm')],[mkb('❌','back_main')]])
 pack_done_kb = lambda: mk([[mkb('✅ انتهيت','pack_done')],[mkb('❌ إلغاء','back_main')]])
-font_kb = lambda: mk([[mkb('Noto Naskh','font_NotoNaskhArabic'),mkb('Cairo','font_Cairo')],[mkb('🔙','back_cust')]])
+font_kb_full = lambda: mk([[mkb('MiSans Arabic','font_MiSansArabicVF'),mkb('Droid Sans','font_DroidSans')],[mkb('Default','font_default')],[mkb('🔙','back_cust')]])
 size_kb = lambda: mk([[mkb('100','size_100'),mkb('150','size_150')],[mkb('200','size_200'),mkb('300','size_300')],[mkb('🔙','back_cust')]])
 stroke_kb = lambda: mk([[mkb('بدون','stroke_0'),mkb('2px','stroke_2')],[mkb('5px','stroke_5'),mkb('10px','stroke_10')],[mkb('🔙','back_cust')]])
 rounded_kb = lambda: mk([[mkb('0','round_0'),mkb('20','round_20')],[mkb('50','round_50'),mkb('100','round_100')],[mkb('🔙','back_cust')]])
 admin_kb = lambda: mk([[mkb('📊 إحصائيات','astats'),mkb('👤 مستخدمين','ausers')],[mkb('📢 بث','abroadcast'),mkb('🔨 حظر','aban')],[mkb('🔙','back_main')]])
 admin_back_kb = lambda: mk([[mkb('🔙','aback')]])
-color_grid = lambda prefix, colors, back: mk([row+[mkb('🔙','back_cust')] if i==len(colors)//2*2 else row for i,row in enumerate([c for c in colors][i:i+2] for i in range(0,len(colors),2))])
-def mkb(t, d): return InlineKeyboardButton(text=t, callback_data=d)
-
 COLORS = [('أبيض','#ffffff'),('أسود','#000000'),('أحمر','#ff3355'),('أزرق','#00f3ff'),('أخضر','#00ff88'),('أصفر','#ffcc00'),('بنفسجي','#8b5cf6'),('برتقالي','#ff6b35'),('وردي','#ff006e'),('رمادي','#8888aa')]
 BGS = [('غامق','#1a1a2e'),('أسود','#0a0a1a'),('أزرق غامق','#0d1b2a'),('بنفسجي','#1a0a2e'),('فاتح','#f0f0f0'),('أبيض','#ffffff'),('أحمر','#2a0a0a'),('أخضر','#0a2a1a')]
-font_kb_full = lambda: mk([[mkb('Noto Naskh','font_NotoNaskhArabic'),mkb('Cairo','font_Cairo')],[mkb('Orbitron','font_Orbitron'),mkb('Rajdhani','font_Rajdhani')],[mkb('🔙','back_cust')]])
 color_kb = lambda: mk([[mkb(n,f'c_{c}') for n,c in COLORS[i:i+2]] for i in range(0,len(COLORS),2)]+[[mkb('🔙','back_cust')]])
 bg_kb = lambda: mk([[mkb(n,f'bg_{c}') for n,c in BGS[i:i+2]] for i in range(0,len(BGS),2)]+[[mkb('🔙','back_cust')]])
 
-# ─── Bot ───
-router = Router()
-user_cfg = {}
-
-class S(StatesGroup):
-    text = State(); pack = State(); pack_text = State(); custom = State()
+async def add_user_db(id, uname, fn, ln):
+    c = sqlite3.connect(str(DB_PATH))
+    c.execute('INSERT OR IGNORE INTO users (id, username, first_name, last_name) VALUES (?,?,?,?)', (id, uname, fn, ln))
+    c.execute('UPDATE users SET last_active=datetime(\'now\'), username=?, first_name=?, last_name=? WHERE id=?', (uname, fn, ln, id))
+    c.commit(); c.close()
+async def is_banned(id):
+    c = sqlite3.connect(str(DB_PATH)); c.row_factory = sqlite3.Row; u = c.execute('SELECT is_banned FROM users WHERE id=?', (id,)).fetchone(); c.close()
+    return u and u['is_banned'] == 1
+async def stats():
+    c = sqlite3.connect(str(DB_PATH)); c.row_factory = sqlite3.Row
+    s = {'total_users': c.execute('SELECT COUNT(*) as c FROM users').fetchone()['c'], 'total_packs': c.execute('SELECT COUNT(*) as c FROM stickers').fetchone()['c'], 'total_stickers': c.execute('SELECT COUNT(*) as c FROM stickers').fetchone()['c'], 'today_users': c.execute("SELECT COUNT(*) as c FROM users WHERE date(created_at)=date('now')").fetchone()['c'], 'today_packs': c.execute("SELECT COUNT(*) as c FROM stickers WHERE date(created_at)=date('now')").fetchone()['c']}
+    c.close(); return s
+async def all_users():
+    c = sqlite3.connect(str(DB_PATH)); c.row_factory = sqlite3.Row; u = [dict(r) for r in c.execute('SELECT id, username, first_name, is_banned FROM users ORDER BY created_at DESC').fetchall()]; c.close(); return u
+async def save_pack(uid, name, title, count):
+    c = sqlite3.connect(str(DB_PATH)); c.execute('INSERT INTO stickers (user_id, pack_name, pack_title, sticker_count) VALUES (?,?,?,?)', (uid, name, title, count)); c.commit(); c.close()
+async def ban(uid):
+    c = sqlite3.connect(str(DB_PATH)); c.execute('UPDATE users SET is_banned=1 WHERE id=?', (uid,)); c.commit(); c.close()
+async def unban(uid):
+    c = sqlite3.connect(str(DB_PATH)); c.execute('UPDATE users SET is_banned=0 WHERE id=?', (uid,)); c.commit(); c.close()
 
 @router.message(Command('start'))
 async def start(m: Message):
@@ -333,7 +293,6 @@ async def pack_done(c: CallbackQuery, state: FSMContext):
         if uid in user_cfg: del user_cfg[uid]
     await state.clear()
 
-# ─── Admin Handlers ───
 @router.callback_query(F.data == 'astats')
 async def astats(c: CallbackQuery):
     if c.from_user.id not in load_config().get('admin_ids',[]): return
@@ -370,7 +329,7 @@ async def aban(c: CallbackQuery, state: FSMContext):
 @router.message(StateFilter(S.text))
 async def ban_process(m: Message, state: FSMContext):
     try:
-        tid = int(m.text.strip()); u = db().execute('SELECT is_banned FROM users WHERE id=?', (tid,)).fetchone()
+        tid = int(m.text.strip()); c = sqlite3.connect(str(DB_PATH)); c.row_factory = sqlite3.Row; u = c.execute('SELECT is_banned FROM users WHERE id=?', (tid,)).fetchone()
         if not u: return await m.answer('❌ غير موجود')
         await (unban if u['is_banned'] else ban)(tid); await m.answer(f'✅ {"فك حظر" if u["is_banned"] else "حظر"} <code>{tid}</code>', reply_markup=admin_kb())
     except: await m.answer('❌ ID غير صحيح')
@@ -381,20 +340,14 @@ async def aback(c: CallbackQuery):
     s = await stats()
     await c.message.edit_text(f'👤 <b>لوحة التحكم</b>\n👥 {s["total_users"]} | 📦 {s["total_packs"]}', reply_markup=admin_kb()); await c.answer()
 
-# ─── Main ───
 async def main():
-    install_deps()
-    download_fonts()
-    token = get_token()
-    db()
     logging.basicConfig(level=logging.ERROR)
     bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(); dp.include_router(router)
     me = await bot.get_me()
-    print(f'\n  ✓ @{me.username} running\n')
+    print(f'\n  ✓ @{me.username} is running!\n  👉 https://t.me/{me.username}\n', flush=True)
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    import os, signal
     try: asyncio.run(main())
-    except KeyboardInterrupt: print('\n  Stopped.')
+    except KeyboardInterrupt: print('Stopped.')
