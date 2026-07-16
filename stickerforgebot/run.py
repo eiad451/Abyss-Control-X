@@ -69,7 +69,7 @@ def db():
 db()
 
 from aiogram import Router, F, Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery, InputFile, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, FSInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -259,14 +259,14 @@ async def cust_cb(c: CallbackQuery, state: FSMContext):
         await c.answer('🎨 جاري الإنشاء...')
         try:
             p = make_sticker(cfg['text'], cfg)
-            await c.message.answer_document(InputFile(p, 'preview.png'), caption='👁 معاينة', reply_markup=mk([[mkb('✅ تأكيد','confirm'),mkb('🔙 تعديل','back_cust')]]))
+            await c.message.answer_document(FSInputFile(p, 'preview.png'), caption='👁 معاينة', reply_markup=mk([[mkb('✅ تأكيد','confirm'),mkb('🔙 تعديل','back_cust')]]))
         except Exception as e: await c.message.answer(f'❌ {str(e)[:100]}')
     if d == 'confirm':
         await state.clear()
         try:
             p = make_sticker(cfg['text'], cfg)
             name = f'forge_{uid}_{int(asyncio.get_event_loop().time())}'
-            await c.message.answer_document(InputFile(p, 'sticker.png'), caption=f'✅ <b>تم!</b>\n\n🔗 t.me/addstickers/{name}', reply_markup=main_kb())
+            await c.message.answer_document(FSInputFile(p, 'sticker.png'), caption=f'✅ <b>تم!</b>\n\n🔗 t.me/addstickers/{name}', reply_markup=main_kb())
             await save_pack(uid, name, 'Sticker', 1)
         except Exception as e: await c.message.answer(f'❌ {str(e)[:100]}')
         finally:
