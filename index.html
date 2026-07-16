@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Abyss Control X - Telegram Publishing Platform</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --neon-blue: #00f3ff;
+      --neon-purple: #8b5cf6;
+      --neon-pink: #ff006e;
+      --dark-bg: #0a0a1a;
+      --darker-bg: #060612;
+      --glass-bg: rgba(10, 10, 30, 0.7);
+      --glass-border: rgba(0, 243, 255, 0.15);
+      --text-primary: #e0e0ff;
+      --text-secondary: #8888aa;
+      --cyber-black: #0d0d1a;
+      --success-neon: #00ff88;
+      --warning-neon: #ffcc00;
+      --danger-neon: #ff3355;
+      --card-shadow: 0 8px 32px rgba(0, 243, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: var(--dark-bg);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--darker-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 3px; box-shadow: 0 0 10px var(--neon-blue); }
+
+    #three-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #particles-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .main-wrapper {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+    }
+
+    /* Loading Screen */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--darker-bg);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+    #loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loading-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 3em;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      margin-bottom: 20px;
+      letter-spacing: 4px;
+    }
+    .loading-sub {
+      color: var(--neon-blue);
+      font-size: 0.9em;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      opacity: 0.7;
+    }
+    .loading-bar-container {
+      width: 300px;
+      height: 3px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .loading-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+      border-radius: 2px;
+      animation: loadProgress 2.5s ease-in-out forwards;
+      box-shadow: 0 0 20px var(--neon-blue);
+    }
+    @keyframes loadProgress {
+      0% { width: 0%; }
+      50% { width: 65%; }
+      100% { width: 100%; }
+    }
+    .loading-percent {
+      font-family: 'Orbitron', monospace;
+      color: var(--neon-blue);
+      margin-top: 15px;
+      font-size: 0.85em;
+      opacity: 0.6;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 260px;
+      height: 100vh;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid var(--glass-border);
+      z-index: 1000;
+      padding: 20px 0;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .sidebar.closed {
+      transform: translateX(260px);
+    }
+    .sidebar-toggle {
+      position: fixed;
+      top: 15px;
+      right: 275px;
+      z-index: 1001;
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--neon-blue);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: right 0.4s ease, all 0.3s ease;
+      font-size: 1.1em;
+    }
+    .sidebar-toggle:hover {
+      background: rgba(0, 243, 255, 0.1);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+    }
+    .sidebar-toggle.closed {
+      right: 15px;
+    }
+
+    .sidebar-logo {
+      padding: 10px 20px 25px;
+      text-align: center;
+      border-bottom: 1px solid var(--glass-border);
+      margin-bottom: 15px;
+    }
+    .sidebar-logo h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.2em;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 2px;
+    }
+    .sidebar-logo span {
+      font-size: 0.7em;
+      color: var(--text-secondary);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 22px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-right: 3px solid transparent;
+      margin: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .nav-item i {
+      width: 24px;
+      margin-left: 14px;
+      font-size: 1.1em;
+      transition: all 0.3s ease;
+    }
+    .nav-item:hover {
+      background: rgba(0, 243, 255, 0.05);
+      color: var(--text-primary);
+      border-right-color: var(--neon-blue);
+    }
+    .nav-item.active {
+      background: rgba(0, 243, 255, 0.08);
+      color: var(--neon-blue);
+      border-right-color: var(--neon-blue);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.05);
+    }
+    .nav-item.active i {
+      color: var(--neon-blue);
+      text-shadow: 0 0 10px var(--neon-blue);
+    }
+
+    /* Main Content */
+    .main-content {
+      margin-right: 260px;
+      padding: 20px 30px;
+      transition: margin-right 0.4s ease;
+      min-height: 100vh;
+    }
+    .main-content.expanded {
+      margin-right: 0;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 0 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .top-bar h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.6em;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--neon-blue), #fff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 2px;
+    }
+    .top-bar h1 small {
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.4em;
+      display: block;
+      -webkit-text-fill-color: var(--text-secondary);
+      color: var(--text-secondary);
+      letter-spacing: 4px;
+    }
+    .top-bar-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .neon-btn {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--neon-blue);
+      padding: 8px 20px;
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9em;
+    }
+    .neon-btn:hover {
+      background: rgba(0, 243, 255, 0.1);
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);
+      border-color: var(--neon-blue);
+      color: #fff;
+    }
+    .neon-btn.purple:hover {
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.15);
+      border-color: var(--neon-purple);
+      color: #fff;
+    }
+    .neon-btn.danger:hover {
+      box-shadow: 0 0 25px rgba(255, 51, 85, 0.15);
+      border-color: var(--danger-neon);
+      color: #fff;
+    }
+    .neon-btn.success {
+      background: rgba(0, 255, 136, 0.08);
+      border-color: rgba(0, 255, 136, 0.2);
+      color: var(--success-neon);
+    }
+    .neon-btn.success:hover {
+      background: rgba(0, 255, 136, 0.15);
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.15);
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-left: 8px;
+      animation: pulse-dot 2s infinite;
+    }
+    .status-dot.online { background: var(--success-neon); box-shadow: 0 0 10px var(--success-neon); }
+    .status-dot.offline { background: var(--danger-neon); box-shadow: 0 0 10px var(--danger-neon); }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Glass Cards */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 22px;
+      transition: all 0.3s ease;
+      box-shadow: var(--card-shadow);
+      height: 100%;
+    }
+    .glass-card:hover {
+      border-color: rgba(0, 243, 255, 0.25);
+      box-shadow: 0 8px 40px rgba(0, 243, 255, 0.12);
+      transform: translateY(-2px);
+    }
+    .glass-card .card-title {
+      font-size: 0.85em;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .glass-card .card-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 2em;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+    }
+    .glass-card .card-value.neon-blue { color: var(--neon-blue); text-shadow: 0 0 20px rgba(0, 243, 255, 0.3); }
+    .glass-card .card-value.neon-purple { color: var(--neon-purple); text-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+    .glass-card .card-value.neon-pink { color: var(--neon-pink); text-shadow: 0 0 20px rgba(255, 0, 110, 0.3); }
+    .glass-card .card-value.neon-green { color: var(--success-neon); text-shadow: 0 0 20px rgba(0, 255, 136, 0.3); }
+
+    .stat-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+    .stat-icon.blue { background: rgba(0, 243, 255, 0.1); color: var(--neon-blue); }
+    .stat-icon.purple { background: rgba(139, 92, 246, 0.1); color: var(--neon-purple); }
+    .stat-icon.pink { background: rgba(255, 0, 110, 0.1); color: var(--neon-pink); }
+    .stat-icon.green { background: rgba(0, 255, 136, 0.1); color: var(--success-neon); }
+    .stat-icon.orange { background: rgba(255, 204, 0, 0.1); color: var(--warning-neon); }
+
+    .trend-up { color: var(--success-neon); font-size: 0.8em; }
+    .trend-down { color: var(--danger-neon); font-size: 0.8em; }
+
+    /* Section visibility */
+    .page-section {
+      display: none;
+    }
+    .page-section.active {
+      display: block;
+      animation: fadeInSection 0.5s ease;
+    }
+    @keyframes fadeInSection {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Form Styles */
+    .form-glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 30px;
+    }
+    .form-glass .form-label {
+      color: var(--neon-blue);
+      font-weight: 600;
+      font-size: 0.9em;
+      margin-bottom: 8px;
+    }
+    .form-glass .form-control, .form-glass .form-select {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 243, 255, 0.15);
+      color: #fff;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: 'Cairo', sans-serif;
+      transition: all 0.3s ease;
+    }
+    .form-glass .form-control:focus, .form-glass .form-select:focus {
+      border-color: var(--neon-blue);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+      background: rgba(0, 0, 0, 0.5);
+      color: #fff;
+    }
+    .form-glass .form-control::placeholder {
+      color: rgba(255,255,255,0.2);
+    }
+    .form-glass textarea.form-control {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    /* Verification Steps */
+    .verify-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.2);
+      margin-bottom: 6px;
+      transition: all 0.3s ease;
+    }
+    .verify-step.passed {
+      background: rgba(0, 255, 136, 0.05);
+    }
+    .verify-step.failed {
+      background: rgba(255, 51, 85, 0.05);
+    }
+    .verify-step .step-icon {
+      width: 28px;
+      text-align: center;
+    }
+    .verify-step .step-icon.pass { color: var(--success-neon); }
+    .verify-step .step-icon.fail { color: var(--danger-neon); }
+    .verify-step .step-icon.pending { color: var(--text-secondary); }
+
+    /* Message Type Chips */
+    .msg-type-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 25px;
+      background: rgba(0, 243, 255, 0.06);
+      border: 1px solid rgba(0, 243, 255, 0.12);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.85em;
+    }
+    .msg-type-chip:hover {
+      background: rgba(0, 243, 255, 0.12);
+      border-color: var(--neon-blue);
+    }
+    .msg-type-chip.active {
+      background: rgba(0, 243, 255, 0.15);
+      border-color: var(--neon-blue);
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+    }
+
+    /* Schedule Selector */
+    .schedule-option {
+      padding: 12px 18px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 8px;
+    }
+    .schedule-option:hover {
+      border-color: rgba(0, 243, 255, 0.2);
+      background: rgba(0, 243, 255, 0.03);
+    }
+    .schedule-option.active {
+      border-color: var(--neon-blue);
+      background: rgba(0, 243, 255, 0.08);
+    }
+
+    /* AI Suggestions */
+    .ai-suggestion {
+      background: rgba(139, 92, 246, 0.06);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .ai-suggestion:hover {
+      background: rgba(139, 92, 246, 0.1);
+      border-color: var(--neon-purple);
+    }
+
+    /* Admin Login */
+    .admin-login-box {
+      max-width: 420px;
+      margin: 60px auto;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+    }
+    .admin-login-box .login-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.8em;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 5px;
+    }
+    .admin-login-box .login-sub {
+      color: var(--text-secondary);
+      font-size: 0.85em;
+      margin-bottom: 30px;
+      letter-spacing: 2px;
+    }
+    .admin-login-box .form-control {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      color: #fff;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .admin-login-box .form-control:focus {
+      border-color: var(--neon-purple);
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+    }
+
+    /* Charts Container */
+    .chart-container {
+      position: relative;
+      height: 200px;
+      width: 100%;
+    }
+    .chart-container-sm {
+      position: relative;
+      height: 150px;
+      width: 100%;
+    }
+
+    /* Neon Text */
+    .neon-text-blue {
+      color: var(--neon-blue);
+      text-shadow: 0 0 10px rgba(0, 243, 255, 0.3), 0 0 20px rgba(0, 243, 255, 0.1);
+    }
+    .neon-text-purple {
+      color: var(--neon-purple);
+      text-shadow: 0 0 10px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.1);
+    }
+
+    /* Activity Log */
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-entry .log-time {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75em;
+      color: var(--text-secondary);
+      min-width: 70px;
+    }
+    .log-entry .log-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+    }
+    .log-entry .log-icon.success { background: rgba(0,255,136,0.1); color: var(--success-neon); }
+    .log-entry .log-icon.error { background: rgba(255,51,85,0.1); color: var(--danger-neon); }
+    .log-entry .log-icon.info { background: rgba(0,243,255,0.1); color: var(--neon-blue); }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+      .sidebar {
+        transform: translateX(260px);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .sidebar-toggle {
+        right: 15px !important;
+      }
+      .main-content {
+        margin-right: 0;
+      }
+      .main-content.sidebar-open {
+        margin-right: 0;
+      }
+      .top-bar h1 { font-size: 1.2em; }
+    }
+    @media (max-width: 576px) {
+      .main-content { padding: 15px; }
+      .glass-card { padding: 16px; }
+      .glass-card .card-value { font-size: 1.5em; }
+    }
+
+    /* Notification Toast */
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .neon-toast {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      min-width: 300px;
+      color: #fff;
+      animation: slideInLeft 0.4s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .neon-toast.removing {
+      animation: slideOutLeft 0.3s ease forwards;
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOutLeft {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(-120%); opacity: 0; }
+    }
+
+    /* User Badge */
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px 6px 6px;
+      border-radius: 30px;
+      background: rgba(0,243,255,0.06);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+    }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      font-weight: 700;
+    }
+
+    /* Glow border */
+    .glow-border {
+      position: relative;
+    }
+    .glow-border::after {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      right: -1px;
+      bottom: -1px;
+      border-radius: inherit;
+      background: linear-gradient(135deg, var(--neon-blue), transparent, var(--neon-purple));
+      z-index: -1;
+      opacity: 0.3;
+    }
+
+    /* Security badges */
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      font-weight: 600;
+      margin: 3px;
+    }
+    .security-badge.active {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--success-neon);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+    .security-badge.inactive {
+      background: rgba(255, 51, 85, 0.1);
+      color: var(--danger-neon);
+      border: 1px solid rgba(255, 51, 85, 0.2);
+    }
+
+    /* Members count */
+    .member-count {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85em;
+      color: var(--neon-blue);
+    }
+
+    /* Section header with neon line */
+    .section-neon-header {
+      position: relative;
+      margin-bottom: 25px;
+      padding-bottom: 12px;
+    }
+    .section-neon-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 60px;
+      height: 2px;
+      background: var(--neon-blue);
+      box-shadow: 0 0 10px var(--neon-blue);
+    }
+    .section-neon-header h3 {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Switch toggle */
+    .neon-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      display: inline-block;
+    }
+    .neon-switch input {
+      display: none;
+    }
+    .neon-switch .slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .neon-switch .slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px;
+      right: 3px;
+      transition: all 0.3s ease;
+    }
+    .neon-switch input:checked + .slider {
+      background: var(--neon-blue);
+      box-shadow: 0 0 10px var(--neon-blue);
+    }
+    .neon-switch input:checked + .slider::before {
+      transform: translateX(-20px);
+    }
+
+    .quick-stat {
+      text-align: center;
+      padding: 10px;
+    }
+    .quick-stat .num {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.4em;
+      font-weight: 700;
+      color: var(--neon-blue);
+    }
+    .quick-stat .label {
+      font-size: 0.75em;
+      color: var(--text-secondary);
+    }
+
+    .neon-progress {
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .neon-progress .bar {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+      box-shadow: 0 0 10px var(--neon-blue);
+    }
+
+    .float-neon-btn {
+      position: fixed;
+      bottom: 30px;
+      left: 30px;
+      z-index: 999;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--neon-blue);
+      color: var(--darker-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3em;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+      transition: all 0.3s ease;
+      border: none;
+    }
+    .float-neon-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 50px rgba(0, 243, 255, 0.5);
+    }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    .user-row:hover {
+      background: rgba(0,243,255,0.03);
+    }
+    .user-row .u-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="loading-logo">ABYSS CONTROL X</div>
+  <div class="loading-sub">Initializing System</div>
+  <div class="loading-bar-container">
+    <div class="loading-bar" id="loadingBar"></div>
+  </div>
+  <div class="loading-percent" id="loadingPercent">0%</div>
+</div>
+
+<!-- Three.js Background -->
+<div id="three-container"></div>
+
+<!-- Particles.js Background -->
+<div id="particles-container"></div>
+
+<!-- Notification Container -->
+<div class="notification-container" id="notificationContainer"></div>
+
+<!-- Sidebar Toggle -->
+<div class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+  <i class="fas fa-bars"></i>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h2>ABYSS CTRL</h2>
+    <span>Telegram Platform</span>
+  </div>
+  <div class="nav-item active" data-section="dashboard" onclick="switchSection('dashboard', this)">
+    <i class="fas fa-tachometer-alt"></i> Dashboard
+  </div>
+  <div class="nav-item" data-section="channels" onclick="switchSection('channels', this)">
+    <i class="fas fa-layer-group"></i> القنوات
+  </div>
+  <div class="nav-item" data-section="accounts" onclick="switchSection('accounts', this)">
+    <i class="fas fa-user-circle"></i> الحسابات
+  </div>
+  <div class="nav-item" data-section="messages" onclick="switchSection('messages', this)">
+    <i class="fas fa-envelope"></i> الرسائل
+  </div>
+  <div class="nav-item" data-section="schedule" onclick="switchSection('schedule', this)">
+    <i class="fas fa-clock"></i> الجدولة
+  </div>
+  <div class="nav-item" data-section="ai" onclick="switchSection('ai', this)">
+    <i class="fas fa-brain"></i> الذكاء الاصطناعي
+  </div>
+  <div class="nav-item" data-section="security" onclick="switchSection('security', this)">
+    <i class="fas fa-shield-alt"></i> الحماية
+  </div>
+  <div class="nav-item" data-section="stats" onclick="switchSection('stats', this)">
+    <i class="fas fa-chart-line"></i> الإحصائيات
+  </div>
+  <div class="nav-item" data-section="admin" onclick="switchSection('admin', this)">
+    <i class="fas fa-crown"></i> لوحة الأدمن
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content" id="mainContent">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div>
+      <h1>
+        ABYSS CONTROL X
+        <small><i class="fas fa-circle" style="font-size:6px;vertical-align:middle;color:var(--success-neon);"></i> النظام نشط</small>
+      </h1>
+    </div>
+    <div class="top-bar-actions">
+      <span style="color:var(--text-secondary);font-size:0.85em;"><i class="fas fa-server"></i> الخادم: <span class="neon-text-blue">متصل</span></span>
+      <div class="user-badge" onclick="switchSection('admin', document.querySelector('[data-section=admin]'))">
+        <div class="user-avatar">A</div>
+        <span style="font-size:0.85em;">𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="page-section active" id="page-dashboard">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-tachometer-alt neon-text-blue" style="margin-left:10px;"></i>Dashboard</h3>
+    </div>
+
+    <!-- Stat Cards Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card" data-aos="fade-up" data-aos-delay="0">
+          <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+          <div class="card-title"><i class="fas fa-user-circle"></i> الحسابات</div>
+          <div class="card-value neon-blue" id="statAccounts">12</div>
+          <div style="font-size:0.75em;color:var(--text-secondary);margin-top:5px;"><span class="trend-up"><i class="fas fa-arrow-up"></i> +2</span> هذا الأسبوع</div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card" data-aos="fade-up" data-aos-delay="50">
+          <div class="stat-icon purple"><i class="fas fa-layer-group"></i></div>
+          <div class="card-title"><i class="fas fa-layer-group"></i> القنوات</div>
+          <div class="card-value neon-purple" id="statChannels">8</div>
+          <div style="font-size:0.75em;color:var(--text-secondary);margin-top:5px;"><span class="trend-up"><i class="fas fa-arrow-up"></i> +1</span> هذا الأسبوع</div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+          <div class="stat-icon green"><i class="fas fa-comments"></i></div>
+          <div class="card-title"><i class="fas fa-comments"></i> المجموعات</div>
+          <div class="card-value neon-green" id="statGroups">15</div>
+          <div style="font-size:0.75em;color:var(--text-secondary);margin-top:5px;">إجمالي</div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card" data-aos="fade-up" data-aos-delay="150">
+          <div class="stat-icon pink"><i class="fas fa-calendar-check"></i></div>
+          <div class="card-title"><i class="fas fa-calendar-check"></i> الرسائل المجدولة</div>
+          <div class="card-value neon-pink" id="statScheduled">47</div>
+          <div style="font-size:0.75em;color:var(--text-secondary);margin-top:5px;">اليوم: <span class="neon-text-blue">12</span></div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card" data-aos="fade-up" data-aos-delay="200">
+          <div class="stat-icon blue"><i class="fas fa-paper-plane"></i></div>
+          <div class="card-title"><i class="fas fa-paper-plane"></i> الرسائل المرسلة</div>
+          <div class="card-value neon-blue" id="statSent">1,284</div>
+          <div style="font-size:0.75em;color:var(--text-secondary);margin-top:5px;">اليوم: <span class="neon-text-blue">156</span></div>
+        </div>
+      </div>
+      <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
+        <div class="glass-card" data-aos="fade-up" data-aos-delay="250">
+          <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+          <div class="card-title"><i class="fas fa-check-circle"></i> نسبة النجاح</div>
+          <div class="card-value neon-green" id="statSuccess">98.7%</div>
+          <div style="font-size:0.75em;color:var(--text-secondary);margin-top:5px;"><span class="trend-up"><i class="fas fa-arrow-up"></i> +0.3%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="glass-card" data-aos="fade-up">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="card-title" style="margin-bottom:0;"><i class="fas fa-chart-area"></i> حالة النشر</div>
+            <span style="font-size:0.75em;color:var(--text-secondary);">آخر 7 أيام</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="glass-card" data-aos="fade-up">
+          <div class="card-title"><i class="fas fa-chart-pie"></i> نوع المحتوى</div>
+          <div class="chart-container">
+            <canvas id="pieChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="glass-card" data-aos="fade-up">
+          <div class="card-title"><i class="fas fa-history"></i> آخر عمليات النشر</div>
+          <div style="max-height:280px;overflow-y:auto;">
+            <div class="log-entry">
+              <div class="log-icon success"><i class="fas fa-check"></i></div>
+              <div style="flex:1;"><span style="color:#fff;">قناة التكنولوجيا</span> - تم نشر 3 رسائل</div>
+              <div class="log-time">02:30</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon success"><i class="fas fa-check"></i></div>
+              <div style="flex:1;"><span style="color:#fff;">الأخبار العاجلة</span> - تم نشر رسالة واحدة</div>
+              <div class="log-time">02:15</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon error"><i class="fas fa-times"></i></div>
+              <div style="flex:1;"><span style="color:#fff;">الرياضة</span> - فشل النشر (صلاحيات)</div>
+              <div class="log-time">01:50</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon success"><i class="fas fa-check"></i></div>
+              <div style="flex:1;"><span style="color:#fff;">تقنية</span> - تم نشر 5 رسائل</div>
+              <div class="log-time">01:20</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon info"><i class="fas fa-info"></i></div>
+              <div style="flex:1;"><span style="color:#fff;">الذكاء الاصطناعي</span> - تمت إعادة الجدولة</div>
+              <div class="log-time">00:45</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="glass-card" data-aos="fade-up">
+          <div class="card-title"><i class="fas fa-microchip"></i> استهلاك الموارد</div>
+          <div style="margin-bottom:15px;">
+            <div class="d-flex justify-content-between" style="font-size:0.85em;margin-bottom:5px;">
+              <span>المعالج</span><span class="neon-text-blue">34%</span>
+            </div>
+            <div class="neon-progress"><div class="bar" style="width:34%;"></div></div>
+          </div>
+          <div style="margin-bottom:15px;">
+            <div class="d-flex justify-content-between" style="font-size:0.85em;margin-bottom:5px;">
+              <span>الذاكرة</span><span class="neon-text-purple">62%</span>
+            </div>
+            <div class="neon-progress"><div class="bar" style="width:62%;background:linear-gradient(90deg,var(--neon-purple),var(--neon-pink));"></div></div>
+          </div>
+          <div>
+            <div class="d-flex justify-content-between" style="font-size:0.85em;margin-bottom:5px;">
+              <span>الشبكة</span><span class="neon-text-blue">18%</span>
+            </div>
+            <div class="neon-progress"><div class="bar" style="width:18%;"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="glass-card" data-aos="fade-up">
+          <div class="card-title"><i class="fas fa-exclamation-triangle"></i> سجل الأخطاء</div>
+          <div style="max-height:200px;overflow-y:auto;">
+            <div class="log-entry">
+              <div class="log-icon error"><i class="fas fa-times"></i></div>
+              <div style="flex:1;font-size:0.85em;">فشل الاتصال بالقناة @tech</div>
+              <div class="log-time">02:30</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon error"><i class="fas fa-times"></i></div>
+              <div style="flex:1;font-size:0.85em;">راسب محدود: 30 رسالة/ثانية</div>
+              <div class="log-time">01:15</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon error"><i class="fas fa-times"></i></div>
+              <div style="flex:1;font-size:0.85em;">Token منتهي الصلاحية</div>
+              <div class="log-time">00:05</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CHANNELS ============ -->
+  <div class="page-section" id="page-channels">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-layer-group neon-text-blue" style="margin-left:10px;"></i>إضافة قناة</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="form-glass">
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-link"></i> رابط أو يوزر القناة</label>
+            <input type="text" class="form-control" id="channelInput" placeholder="@username أو https://t.me/username" style="direction:ltr;text-align:left;">
+          </div>
+          <div style="text-align:center;margin:15px 0;">
+            <span style="color:var(--text-secondary);font-size:0.85em;">أو</span>
+          </div>
+          <div class="mb-3">
+            <input type="text" class="form-control" placeholder="@username" style="direction:ltr;text-align:left;">
+          </div>
+          <button class="neon-btn success w-100" onclick="verifyChannel()">
+            <i class="fas fa-search"></i> تحقق من القناة
+          </button>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="glass-card" id="verificationResults" style="display:none;">
+          <div class="card-title"><i class="fas fa-list-check"></i> نتائج التحقق</div>
+          <div id="verificationSteps">
+            <div class="verify-step" data-step="1">
+              <div class="step-icon pending"><i class="fas fa-circle"></i></div>
+              <span>وجود القناة</span>
+            </div>
+            <div class="verify-step" data-step="2">
+              <div class="step-icon pending"><i class="fas fa-circle"></i></div>
+              <span>البوت مشرف</span>
+            </div>
+            <div class="verify-step" data-step="3">
+              <div class="step-icon pending"><i class="fas fa-circle"></i></div>
+              <span>صلاحيات النشر</span>
+            </div>
+            <div class="verify-step" data-step="4">
+              <div class="step-icon pending"><i class="fas fa-circle"></i></div>
+              <span>صورة القناة</span>
+            </div>
+            <div class="verify-step" data-step="5">
+              <div class="step-icon pending"><i class="fas fa-circle"></i></div>
+              <span>عدد الأعضاء</span>
+            </div>
+            <div class="verify-step" data-step="6">
+              <div class="step-icon pending"><i class="fas fa-circle"></i></div>
+              <span>نوع القناة</span>
+            </div>
+          </div>
+          <div id="channelResult" style="margin-top:12px;display:none;" class="neon-text-blue"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;">
+      <div class="section-neon-header">
+        <h3 style="font-size:1.2em;"><i class="fas fa-list neon-text-blue" style="margin-left:10px;"></i>قنواتي</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-dark table-borderless" style="background:transparent;">
+          <thead>
+            <tr style="color:var(--text-secondary);font-size:0.85em;border-bottom:1px solid rgba(255,255,255,0.05);">
+              <th>القناة</th><th>النوع</th><th>الأعضاء</th><th>الحالة</th><th>آخر نشر</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+              <td><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:8px;"></i> @technews</td>
+              <td><span style="color:var(--neon-blue);font-size:0.85em;">عامة</span></td>
+              <td class="member-count">24.5k</td>
+              <td><span style="color:var(--success-neon);font-size:0.85em;"><i class="fas fa-circle" style="font-size:8px;"></i> نشط</span></td>
+              <td style="font-size:0.85em;color:var(--text-secondary);">منذ 5 دقائق</td>
+              <td><i class="fas fa-ellipsis-v" style="color:var(--text-secondary);cursor:pointer;"></i></td>
+            </tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+              <td><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:8px;"></i> @sport_world</td>
+              <td><span style="color:var(--neon-blue);font-size:0.85em;">خاصة</span></td>
+              <td class="member-count">8.2k</td>
+              <td><span style="color:var(--success-neon);font-size:0.85em;"><i class="fas fa-circle" style="font-size:8px;"></i> نشط</span></td>
+              <td style="font-size:0.85em;color:var(--text-secondary);">منذ ساعة</td>
+              <td><i class="fas fa-ellipsis-v" style="color:var(--text-secondary);cursor:pointer;"></i></td>
+            </tr>
+            <tr>
+              <td><i class="fas fa-times-circle" style="color:var(--danger-neon);margin-left:8px;"></i> @old_channel</td>
+              <td><span style="color:var(--neon-blue);font-size:0.85em;">عامة</span></td>
+              <td class="member-count">1.1k</td>
+              <td><span style="color:var(--danger-neon);font-size:0.85em;"><i class="fas fa-circle" style="font-size:8px;"></i> غير نشط</span></td>
+              <td style="font-size:0.85em;color:var(--text-secondary);">منذ 3 أيام</td>
+              <td><i class="fas fa-ellipsis-v" style="color:var(--text-secondary);cursor:pointer;"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ACCOUNTS ============ -->
+  <div class="page-section" id="page-accounts">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-user-circle neon-text-purple" style="margin-left:10px;"></i>إضافة حساب</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-7">
+        <div class="form-glass">
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-robot"></i> Telegram Bot Token</label>
+            <input type="text" class="form-control" placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz" style="direction:ltr;text-align:left;font-family:monospace;font-size:0.85em;">
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-key"></i> Telegram API ID & Hash</label>
+            <div class="row g-2">
+              <div class="col-6"><input type="text" class="form-control" placeholder="API ID" style="direction:ltr;text-align:left;"></div>
+              <div class="col-6"><input type="text" class="form-control" placeholder="API Hash" style="direction:ltr;text-align:left;font-family:monospace;font-size:0.8em;"></div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-file-alt"></i> Session String</label>
+            <textarea class="form-control" placeholder="1BVdsu0YEuq... (Pyrogram Session)" style="direction:ltr;text-align:left;font-family:monospace;font-size:0.8em;min-height:80px;"></textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="neon-btn success flex-fill" onclick="testConnection()"><i class="fas fa-plug"></i> اختبار الاتصال</button>
+            <button class="neon-btn flex-fill"><i class="fas fa-save"></i> حفظ</button>
+          </div>
+          <div id="connectionResult" style="margin-top:12px;display:none;"></div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-list"></i> الحسابات المضافة</div>
+          <div style="max-height:360px;overflow-y:auto;">
+            <div class="user-row">
+              <div class="u-avatar">B</div>
+              <div style="flex:1;"><span style="font-weight:600;">Bot Alpha</span><br><span style="font-size:0.8em;color:var(--text-secondary);">@my_alpha_bot</span></div>
+              <span style="color:var(--success-neon);font-size:0.75em;"><i class="fas fa-circle"></i></span>
+            </div>
+            <div class="user-row">
+              <div class="u-avatar">U</div>
+              <div style="flex:1;"><span style="font-weight:600;">User Account</span><br><span style="font-size:0.8em;color:var(--text-secondary);">API Session</span></div>
+              <span style="color:var(--success-neon);font-size:0.75em;"><i class="fas fa-circle"></i></span>
+            </div>
+            <div class="user-row">
+              <div class="u-avatar">B</div>
+              <div style="flex:1;"><span style="font-weight:600;">Bot Beta</span><br><span style="font-size:0.8em;color:var(--text-secondary);">@beta_pub_bot</span></div>
+              <span style="color:var(--danger-neon);font-size:0.75em;"><i class="fas fa-circle"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MESSAGES ============ -->
+  <div class="page-section" id="page-messages">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-envelope neon-text-pink" style="margin-left:10px;"></i>إدارة الرسائل</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="form-glass">
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-tag"></i> نوع الرسالة</label>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="msg-type-chip active"><i class="fas fa-font"></i> نص</span>
+              <span class="msg-type-chip"><i class="fas fa-image"></i> صور</span>
+              <span class="msg-type-chip"><i class="fas fa-video"></i> فيديو</span>
+              <span class="msg-type-chip"><i class="fas fa-file-image"></i> GIF</span>
+              <span class="msg-type-chip"><i class="fas fa-file"></i> ملفات</span>
+              <span class="msg-type-chip"><i class="fas fa-th"></i> أزرار Inline</span>
+              <span class="msg-type-chip"><i class="fas fa-poll"></i> استطلاعات</span>
+              <span class="msg-type-chip"><i class="fas fa-images"></i> ألبومات</span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-pen"></i> محتوى الرسالة</label>
+            <textarea class="form-control" placeholder="اكتب رسالتك هنا..." style="min-height:150px;" id="messageContent"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-th"></i> الأزرار (JSON)</label>
+            <textarea class="form-control" placeholder='[{"text":"Visit","url":"https://example.com"}]' style="direction:ltr;text-align:left;font-family:monospace;font-size:0.8em;min-height:60px;"></textarea>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label"><i class="fas fa-layer-group"></i> القناة المستهدفة</label>
+              <select class="form-select">
+                <option>@technews</option>
+                <option>@sport_world</option>
+                <option>@ai_daily</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><i class="fas fa-robot"></i> الحساب المرسل</label>
+              <select class="form-select">
+                <option>Bot Alpha</option>
+                <option>User Account</option>
+              </select>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="neon-btn success flex-fill" onclick="sendMessageNow()"><i class="fas fa-paper-plane"></i> إرسال الآن</button>
+            <button class="neon-btn purple flex-fill" onclick="showNotification('info', 'تمت جدولة الرسالة')"><i class="fas fa-clock"></i> جدولة</button>
+            <button class="neon-btn" onclick="showNotification('info', 'تم حفظ المسودة')"><i class="fas fa-save"></i> حفظ كمسودة</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-history"></i> آخر المسودات</div>
+          <div style="max-height:400px;overflow-y:auto;">
+            <div class="ai-suggestion" style="cursor:default;">
+              <div style="font-size:0.9em;font-weight:600;">🚀 إطلاق المنتج الجديد</div>
+              <div style="font-size:0.8em;color:var(--text-secondary);">@technews • منذ ساعتين</div>
+            </div>
+            <div class="ai-suggestion" style="cursor:default;">
+              <div style="font-size:0.9em;font-weight:600;">📊 تقرير الأسبوع</div>
+              <div style="font-size:0.8em;color:var(--text-secondary);">@ai_daily • منذ 5 ساعات</div>
+            </div>
+            <div class="ai-suggestion" style="cursor:default;">
+              <div style="font-size:0.9em;font-weight:600;">🎉 عرض خاص للمتابعين</div>
+              <div style="font-size:0.8em;color:var(--text-secondary);">@sport_world • أمس</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCHEDULE ============ -->
+  <div class="page-section" id="page-schedule">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-clock neon-text-green" style="margin-left:10px;"></i>الجدولة</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="form-glass">
+          <div class="card-title mb-3"><i class="fas fa-calendar-alt"></i> تكرار الجدولة</div>
+          <div class="schedule-option" onclick="selectSchedule(this)">
+            <div class="d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-clock neon-text-blue" style="margin-left:10px;"></i> كل دقيقة</span>
+              <span style="font-size:0.75em;color:var(--text-secondary);">1m</span>
+            </div>
+          </div>
+          <div class="schedule-option" onclick="selectSchedule(this)">
+            <div class="d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-clock neon-text-purple" style="margin-left:10px;"></i> كل 5 دقائق</span>
+              <span style="font-size:0.75em;color:var(--text-secondary);">5m</span>
+            </div>
+          </div>
+          <div class="schedule-option" onclick="selectSchedule(this)">
+            <div class="d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-clock neon-text-blue" style="margin-left:10px;"></i> كل ساعة</span>
+              <span style="font-size:0.75em;color:var(--text-secondary);">1h</span>
+            </div>
+          </div>
+          <div class="schedule-option" onclick="selectSchedule(this)">
+            <div class="d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-calendar-day neon-text-green" style="margin-left:10px;"></i> كل يوم</span>
+              <span style="font-size:0.75em;color:var(--text-secondary);">24h</span>
+            </div>
+          </div>
+          <div class="schedule-option" onclick="selectSchedule(this)">
+            <div class="d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-calendar-week neon-text-purple" style="margin-left:10px;"></i> أيام محددة</span>
+              <span style="font-size:0.75em;color:var(--text-secondary);">اختيار</span>
+            </div>
+          </div>
+          <div class="schedule-option" onclick="selectSchedule(this)">
+            <div class="d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-calendar-check neon-text-pink" style="margin-left:10px;"></i> تاريخ معين</span>
+              <span style="font-size:0.75em;color:var(--text-secondary);">محدد</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-list"></i> المهام المجدولة</div>
+          <div style="max-height:340px;overflow-y:auto;">
+            <div class="log-entry">
+              <div class="log-icon success"><i class="fas fa-clock"></i></div>
+              <div style="flex:1;">
+                <span style="color:#fff;">@technews</span>
+                <div style="font-size:0.8em;color:var(--text-secondary);">كل ساعة • نص + صورة</div>
+              </div>
+              <div style="text-align:left;">
+                <span class="member-count" style="font-size:0.75em;">نشط</span>
+              </div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon info"><i class="fas fa-clock"></i></div>
+              <div style="flex:1;">
+                <span style="color:#fff;">@sport_world</span>
+                <div style="font-size:0.8em;color:var(--text-secondary);">كل 5 دقائق • رابط</div>
+              </div>
+              <div style="text-align:left;">
+                <span class="member-count" style="font-size:0.75em;">نشط</span>
+              </div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon error"><i class="fas fa-pause"></i></div>
+              <div style="flex:1;">
+                <span style="color:#fff;">@old_channel</span>
+                <div style="font-size:0.8em;color:var(--text-secondary);">كل يوم • متوقف</div>
+              </div>
+              <div style="text-align:left;">
+                <span style="color:var(--danger-neon);font-size:0.75em;">متوقف</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card mt-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="card-title" style="margin-bottom:0;"><i class="fas fa-calendar-plus"></i> بدء الجدولة</div>
+              <div style="font-size:0.85em;color:var(--text-secondary);">اختر التكرار والقناة</div>
+            </div>
+            <button class="neon-btn success" onclick="startSchedule()"><i class="fas fa-play"></i> بدء</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ AI ============ -->
+  <div class="page-section" id="page-ai">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-brain neon-text-purple" style="margin-left:10px;"></i>الذكاء الاصطناعي</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="form-glass">
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-pen"></i> نص الإعلان</label>
+            <textarea class="form-control" placeholder="اكتب إعلانك هنا لتحليله..." style="min-height:130px;" id="aiInput"></textarea>
+          </div>
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <button class="neon-btn purple" onclick="aiSuggestion('time')"><i class="fas fa-clock"></i> أفضل وقت للنشر</button>
+            <button class="neon-btn purple" onclick="aiSuggestion('rewrite')"><i class="fas fa-sync"></i> إعادة كتابة الإعلان</button>
+            <button class="neon-btn purple" onclick="aiSuggestion('hashtag')"><i class="fas fa-hashtag"></i> توليد هاشتاقات</button>
+            <button class="neon-btn purple" onclick="aiSuggestion('title')"><i class="fas fa-heading"></i> عنوان جذاب</button>
+            <button class="neon-btn purple" onclick="aiSuggestion('translate')"><i class="fas fa-language"></i> ترجمة الإعلان</button>
+          </div>
+        </div>
+        <div class="glass-card mt-3" id="aiResult" style="display:none;">
+          <div class="card-title"><i class="fas fa-lightbulb neon-text-purple"></i> اقتراح الذكاء الاصطناعي</div>
+          <div id="aiResultContent" style="color:#fff;line-height:1.8;"></div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-chart-bar"></i> تحليل الأداء</div>
+          <div class="quick-stat">
+            <div class="num" style="color:var(--success-neon);">3:45 PM</div>
+            <div class="label">أفضل وقت للنشر</div>
+          </div>
+          <div class="quick-stat">
+            <div class="num" style="color:var(--neon-blue);">2.4x</div>
+            <div class="label">متوسط التفاعل</div>
+          </div>
+          <div class="quick-stat">
+            <div class="num" style="color:var(--neon-purple);">85%</div>
+            <div class="label">نسبة نجاح المحتوى</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SECURITY ============ -->
+  <div class="page-section" id="page-security">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-shield-alt neon-text-green" style="margin-left:10px;"></i>الحماية</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-lock"></i> إعدادات الحماية</div>
+          <div style="margin-bottom:12px;">
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-shield neon-text-blue" style="margin-left:10px;"></i> تشفير AES-256</span>
+              <label class="neon-switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-mobile-alt neon-text-purple" style="margin-left:10px;"></i> تسجيل الأجهزة</span>
+              <label class="neon-switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-history neon-text-blue" style="margin-left:10px;"></i> سجل دخول</span>
+              <label class="neon-switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-key neon-text-pink" style="margin-left:10px;"></i> 2FA</span>
+              <label class="neon-switch"><input type="checkbox"><span class="slider"></span></label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-shield-virus neon-text-green" style="margin-left:10px;"></i> Captcha</span>
+              <label class="neon-switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-tachometer-alt neon-text-purple" style="margin-left:10px;"></i> Rate Limit</span>
+              <label class="neon-switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2">
+              <span><i class="fas fa-database neon-text-blue" style="margin-left:10px;"></i> نسخ احتياطي تلقائي</span>
+              <label class="neon-switch"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-history"></i> سجل الدخول</div>
+          <div style="max-height:300px;overflow-y:auto;">
+            <div class="log-entry">
+              <div class="log-icon success"><i class="fas fa-check"></i></div>
+              <div style="flex:1;font-size:0.85em;">دخول من <span style="color:#fff;">192.168.1.1</span></div>
+              <div class="log-time">منذ 5 د</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon info"><i class="fas fa-info"></i></div>
+              <div style="flex:1;font-size:0.85em;">تغيير كلمة المرور</div>
+              <div class="log-time">منذ 2 س</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-icon error"><i class="fas fa-times"></i></div>
+              <div style="flex:1;font-size:0.85em;">محاولة دخول فاشلة <span style="color:#fff;">10.0.0.5</span></div>
+              <div class="log-time">منذ 6 س</div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card mt-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div><span style="font-weight:600;"><i class="fas fa-database neon-text-blue" style="margin-left:8px;"></i> النسخ الاحتياطي</span><br><span style="font-size:0.8em;color:var(--text-secondary);">آخر نسخ: منذ 3 ساعات</span></div>
+            <button class="neon-btn success" onclick="showNotification('success', 'تم إنشاء النسخ الاحتياطي')"><i class="fas fa-download"></i> إنشاء نسخة</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <div class="col-12">
+        <div class="glass-card">
+          <div class="d-flex flex-wrap gap-2">
+            <span class="security-badge active"><i class="fas fa-shield-alt"></i> AES-256</span>
+            <span class="security-badge active"><i class="fas fa-mobile-alt"></i> Device Logging</span>
+            <span class="security-badge active"><i class="fas fa-history"></i> Login History</span>
+            <span class="security-badge inactive"><i class="fas fa-key"></i> 2FA</span>
+            <span class="security-badge active"><i class="fas fa-shield-virus"></i> Captcha</span>
+            <span class="security-badge active"><i class="fas fa-tachometer-alt"></i> Rate Limit</span>
+            <span class="security-badge active"><i class="fas fa-database"></i> Backup</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STATISTICS ============ -->
+  <div class="page-section" id="page-stats">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-chart-line neon-text-blue" style="margin-left:10px;"></i>الإحصائيات</h3>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-lg-3 col-6">
+        <div class="glass-card text-center" data-aos="fade-up">
+          <div class="card-value neon-blue" id="statTotalMessages">12,847</div>
+          <div class="card-title" style="justify-content:center;">عدد الرسائل</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="glass-card text-center" data-aos="fade-up" data-aos-delay="50">
+          <div class="card-value neon-purple" id="statTotalChannels">8</div>
+          <div class="card-title" style="justify-content:center;">عدد القنوات</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="glass-card text-center" data-aos="fade-up" data-aos-delay="100">
+          <div class="card-value neon-green" id="statTotalUsers">4,291</div>
+          <div class="card-title" style="justify-content:center;">عدد المستخدمين</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="glass-card text-center" data-aos="fade-up" data-aos-delay="150">
+          <div class="card-value neon-pink" id="statSpeed">47/ث</div>
+          <div class="card-title" style="justify-content:center;">سرعة الإرسال</div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-lg-8">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-chart-line"></i> نجاح العمليات</div>
+          <div class="chart-container">
+            <canvas id="successChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-exclamation-triangle"></i> الأخطاء</div>
+          <div class="chart-container">
+            <canvas id="errorsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="glass-card">
+          <div class="card-title"><i class="fas fa-globe"></i> إحصائيات عالمية</div>
+          <div class="row g-3">
+            <div class="col-md-3 col-6">
+              <div class="quick-stat">
+                <div class="num" style="color:var(--neon-blue);">156</div>
+                <div class="label">أرسلت اليوم</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="quick-stat">
+                <div class="num" style="color:var(--neon-purple);">1,284</div>
+                <div class="label">هذا الأسبوع</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="quick-stat">
+                <div class="num" style="color:var(--success-neon);">98.7%</div>
+                <div class="label">معدل النجاح</div>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="quick-stat">
+                <div class="num" style="color:var(--neon-pink);">3</div>
+                <div class="label">الأخطاء اليوم</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN PANEL ============ -->
+  <div class="page-section" id="page-admin">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-crown neon-text-pink" style="margin-left:10px;"></i>لوحة الأدمن</h3>
+    </div>
+
+    <!-- Admin Login Form -->
+    <div id="adminLoginForm">
+      <div class="admin-login-box" data-aos="fade-up">
+        <div class="login-title">ABYSS</div>
+        <div class="login-sub">𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐</div>
+        <form onsubmit="adminLogin(event)">
+          <input type="text" class="form-control" id="adminUser" value="𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐" readonly style="opacity:0.8;">
+          <input type="password" class="form-control" id="adminPass" placeholder="كلمة المرور" value="VT_YC">
+          <input type="text" class="form-control" id="adminId" value="ID: 7933531187" readonly style="opacity:0.8;">
+          <button type="submit" class="neon-btn w-100" style="margin-top:10px;border-color:var(--neon-purple);color:var(--neon-purple);">
+            <i class="fas fa-lock"></i> تسجيل الدخول
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Admin Dashboard (hidden by default) -->
+    <div id="adminDashboard" style="display:none;">
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('info', 'إدارة المستخدمين')" style="cursor:pointer;">
+            <div class="stat-icon purple"><i class="fas fa-users-cog"></i></div>
+            <div class="card-title">إدارة المستخدمين</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">12 مستخدم نشط</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('info', 'إدارة الاشتراكات')" style="cursor:pointer;">
+            <div class="stat-icon blue"><i class="fas fa-credit-card"></i></div>
+            <div class="card-title">إدارة الاشتراكات</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">8 اشتراكات فعالة</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('info', 'إدارة السيرفر')" style="cursor:pointer;">
+            <div class="stat-icon green"><i class="fas fa-server"></i></div>
+            <div class="card-title">إدارة السيرفر</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">حالة: ممتاز</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('info', 'مراقبة السجلات')" style="cursor:pointer;">
+            <div class="stat-icon pink"><i class="fas fa-clipboard-list"></i></div>
+            <div class="card-title">مراقبة السجلات</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">24 سجل جديد</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('warning', 'تم إيقاف الحساب')" style="cursor:pointer;border-color:rgba(255,51,85,0.2);">
+            <div class="stat-icon pink"><i class="fas fa-ban"></i></div>
+            <div class="card-title">إيقاف أي حساب</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">اضغط للإيقاف</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('info', 'تم إرسال الإشعارات')" style="cursor:pointer;">
+            <div class="stat-icon blue"><i class="fas fa-broadcast-tower"></i></div>
+            <div class="card-title">إرسال إشعارات جماعية</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">لجميع المستخدمين</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="showNotification('success', 'تم إنشاء النسخة الاحتياطية')" style="cursor:pointer;">
+            <div class="stat-icon green"><i class="fas fa-database"></i></div>
+            <div class="card-title">النسخ الاحتياطي</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">آخر نسخ: 3 ساعات</div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <div class="glass-card" onclick="switchSection('stats', document.querySelector('[data-section=stats]'))" style="cursor:pointer;">
+            <div class="stat-icon purple"><i class="fas fa-chart-pie"></i></div>
+            <div class="card-title">الإحصائيات العالمية</div>
+            <div style="font-size:0.85em;color:var(--text-secondary);">عرض الإحصائيات</div>
+          </div>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="glass-card">
+            <div class="card-title"><i class="fas fa-history"></i> سجل العمليات</div>
+            <div style="max-height:250px;overflow-y:auto;">
+              <div class="log-entry">
+                <div class="log-icon info"><i class="fas fa-info"></i></div>
+                <div style="flex:1;font-size:0.85em;">تم تعديل صلاحيات المستخدم</div>
+                <div class="log-time">منذ 10 د</div>
+              </div>
+              <div class="log-entry">
+                <div class="log-icon success"><i class="fas fa-check"></i></div>
+                <div style="flex:1;font-size:0.85em;">تم تفعيل حساب جديد</div>
+                <div class="log-time">منذ 25 د</div>
+              </div>
+              <div class="log-entry">
+                <div class="log-icon error"><i class="fas fa-times"></i></div>
+                <div style="flex:1;font-size:0.85em;">محاولة وصول غير مصرح بها</div>
+                <div class="log-time">منذ 1 س</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="glass-card">
+            <div class="card-title"><i class="fas fa-sliders-h"></i> التحكم الكامل بالنظام</div>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="neon-btn success" onclick="showNotification('success', 'تم إعادة تشغيل النظام')"><i class="fas fa-sync"></i> إعادة تشغيل</button>
+              <button class="neon-btn danger" onclick="showNotification('warning', 'تم إيقاف النظام')"><i class="fas fa-stop"></i> إيقاف</button>
+              <button class="neon-btn purple" onclick="showNotification('info', 'تم تحديث النظام')"><i class="fas fa-cloud-download-alt"></i> تحديث</button>
+              <button class="neon-btn" onclick="showNotification('success', 'تم نسخ احتياطي كامل')"><i class="fas fa-database"></i> نسخ احتياطي</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;padding:30px 0 10px;color:var(--text-secondary);font-size:0.8em;border-top:1px solid rgba(255,255,255,0.03);margin-top:30px;">
+    <span style="font-family:'Orbitron',monospace;color:var(--neon-blue);">ABYSS CONTROL X</span> &mdash; Telegram Publishing Platform &mdash; 𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐
+  </div>
+</div>
+
+<!-- Floating AI Button -->
+<button class="float-neon-btn" onclick="switchSection('ai', document.querySelector('[data-section=ai]'))">
+  <i class="fas fa-robot"></i>
+</button>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  const API_URL = window.location.origin;
+  let AUTH_TOKEN = localStorage.getItem('abyss_token') || null;
+
+  // ======== API HELPERS ========
+  async function api(method, path, body) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (AUTH_TOKEN) opts.headers['Authorization'] = 'Bearer ' + AUTH_TOKEN;
+    if (body) opts.body = JSON.stringify(body);
+    try {
+      const res = await fetch(API_URL + '/api' + path, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'Request failed');
+      return data;
+    } catch (err) {
+      if (err.message.includes('Unauthorized') || err.message.includes('انتهت')) {
+        AUTH_TOKEN = null; localStorage.removeItem('abyss_token');
+      }
+      throw err;
+    }
+  }
+
+  function apiGet(path) { return api('GET', path); }
+  function apiPost(path, body) { return api('POST', path, body); }
+  function apiPut(path, body) { return api('PUT', path, body); }
+  function apiDelete(path) { return api('DELETE', path); }
+
+  // ======== LOADING SCREEN ========
+  let loadPercent = 0;
+  const loadInterval = setInterval(() => {
+    loadPercent += Math.floor(Math.random() * 8) + 2;
+    if (loadPercent > 100) { loadPercent = 100; clearInterval(loadInterval); }
+    document.getElementById('loadingPercent').textContent = loadPercent + '%';
+    document.getElementById('loadingBar').style.width = loadPercent + '%';
+  }, 120);
+
+  window.addEventListener('load', async () => {
+    setTimeout(async () => {
+      loadPercent = 100;
+      document.getElementById('loadingPercent').textContent = '100%';
+      document.getElementById('loadingBar').style.width = '100%';
+      clearInterval(loadInterval);
+      setTimeout(async () => {
+        document.getElementById('loading-screen').classList.add('hidden');
+        initParticles();
+        initAOS();
+        if (AUTH_TOKEN) { try { const me = await apiGet('/auth/me'); if (me.user) updateUIForAuth(me.user); } catch {} }
+        try {
+          const stats = await apiGet('/stats');
+          updateDashboard(stats);
+          initCharts(stats);
+        } catch { initCharts(null); }
+        setTimeout(() => showNotification('success', '✓ تم تحميل النظام بنجاح'), 1000);
+      }, 500);
+    }, 500);
+  });
+
+  // ======== SIDEBAR ========
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    const content = document.getElementById('mainContent');
+    sidebar.classList.toggle('closed');
+    toggle.classList.toggle('closed');
+    if (window.innerWidth <= 992) sidebar.classList.toggle('open');
+    else content.classList.toggle('expanded');
+  }
+
+  // ======== SECTION SWITCHING ========
+  function switchSection(sectionId, navEl) {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + sectionId).classList.add('active');
+    if (navEl) navEl.classList.add('active');
+    if (window.innerWidth <= 992) {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarToggle').classList.add('closed');
+    }
+    if (sectionId === 'dashboard') loadDashboard();
+    if (sectionId === 'stats') loadStats();
+    if (sectionId === 'admin' && document.getElementById('adminDashboard').style.display !== 'none') loadAdminPanel();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ======== NOTIFICATIONS ========
+  function showNotification(type, message) {
+    const container = document.getElementById('notificationContainer');
+    const icons = { success: 'fa-check-circle', error: 'fa-times-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+    const colors = { success: 'var(--success-neon)', error: 'var(--danger-neon)', warning: 'var(--warning-neon)', info: 'var(--neon-blue)' };
+    const toast = document.createElement('div');
+    toast.className = 'neon-toast';
+    toast.innerHTML = `<i class="fas ${icons[type] || icons.info}" style="color:${colors[type] || colors.info};font-size:1.3em;"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('removing'); setTimeout(() => toast.remove(), 300); }, 4000);
+  }
+
+  // ======== DASHBOARD ========
+ async function loadDashboard() {
+    try {
+      const stats = await apiGet('/stats');
+      updateDashboard(stats);
+      updateCharts(stats);
+    } catch { showNotification('error', 'فشل تحميل البيانات'); }
+  }
+
+  function updateDashboard(stats) {
+    if (!stats) return;
+    document.getElementById('statAccounts').textContent = stats.accounts?.total || '0';
+    document.getElementById('statChannels').textContent = stats.channels?.total || '0';
+    document.getElementById('statGroups').textContent = stats.groups?.total || '0';
+    document.getElementById('statScheduled').textContent = stats.messages?.scheduled || '0';
+    document.getElementById('statSent').textContent = (stats.messages?.sent || 0).toLocaleString();
+    document.getElementById('statSuccess').textContent = (stats.successRate || 0) + '%';
+    document.getElementById('statTotalMessages').textContent = (stats.messages?.total || 0).toLocaleString();
+    document.getElementById('statTotalChannels').textContent = stats.channels?.total || '0';
+    document.getElementById('statTotalUsers').textContent = stats.users?.total || '0';
+    document.getElementById('statSpeed').textContent = Math.floor((stats.messages?.sent || 0) / 30) + '/ث';
+  }
+
+  // ======== CHANNEL VERIFICATION ========
+  async function verifyChannel() {
+    const input = document.getElementById('channelInput').value.trim();
+    if (!input) {
+      Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء إدخال رابط أو يوزر القناة', background: '#0a0a1a', color: '#e0e0ff', confirmButtonColor: '#00f3ff' });
+      return;
+    }
+    const resultDiv = document.getElementById('verificationResults');
+    resultDiv.style.display = 'block';
+    const steps = document.querySelectorAll('#verificationSteps .verify-step');
+    steps.forEach(s => {
+      const icon = s.querySelector('.step-icon');
+      icon.className = 'step-icon pending';
+      icon.innerHTML = '<i class="fas fa-circle"></i>';
+      s.className = 'verify-step';
+    });
+    document.getElementById('channelResult').style.display = 'none';
+    showNotification('info', 'جاري التحقق من القناة...');
+
+    try {
+      const accounts = await apiGet('/accounts');
+      if (!accounts.length) { showNotification('error', 'لا توجد حسابات. أضف حساب بوت أولاً.'); return; }
+
+      const result = await apiPost('/channels/verify', { username: input, account_id: accounts[0].id });
+
+      const stepIcons = ['وجود القناة', 'البوت مشرف', 'صلاحيات النشر', 'صورة القناة', 'عدد الأعضاء', 'نوع القناة'];
+      steps.forEach((s, i) => {
+        const icon = s.querySelector('.step-icon');
+        s.className = 'verify-step ' + (result.verified ? 'passed' : 'failed');
+        icon.className = 'step-icon ' + (result.verified ? 'pass' : 'fail');
+        icon.innerHTML = result.verified ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
+      });
+
+      const resEl = document.getElementById('channelResult');
+      resEl.style.display = 'block';
+      if (result.verified) {
+        resEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:8px;"></i> تم التحقق بنجاح! القناة جاهزة للنشر.';
+        showNotification('success', '✓ تم التحقق من القناة بنجاح');
+        await apiPost('/channels', { username: input, account_id: accounts[0].id });
+      } else {
+        resEl.innerHTML = '<i class="fas fa-times-circle" style="color:var(--danger-neon);margin-left:8px;"></i> ' + (result.message || 'فشل التحقق');
+        showNotification('error', result.message || 'فشل التحقق من القناة');
+      }
+    } catch (err) {
+      showNotification('error', err.message);
+    }
+  }
+
+  // ======== TEST CONNECTION ========
+  async function testConnection() {
+    const result = document.getElementById('connectionResult');
+    result.style.display = 'block';
+    result.innerHTML = '<div style="text-align:center;padding:10px;"><i class="fas fa-spinner fa-spin" style="color:var(--neon-blue);font-size:1.5em;"></i><br><span style="color:var(--text-secondary);">جاري اختبار الاتصال...</span></div>';
+    try {
+      const tokenInput = document.querySelector('#page-accounts input[placeholder*="1234567890"]');
+      const token = tokenInput ? tokenInput.value.trim() : '';
+      if (!token) { showNotification('error', 'الرجاء إدخال Bot Token'); return; }
+      const res = await apiPost('/accounts/test', { type: 'bot', token });
+      result.innerHTML = `<div style="text-align:center;padding:10px;color:var(--success-neon);"><i class="fas fa-check-circle" style="font-size:1.5em;"></i><br><span style="color:#fff;">${res.message || 'تم الاتصال بنجاح!'}</span><br><span style="font-size:0.8em;color:var(--text-secondary);">@${res.username || ''}</span></div>`;
+      showNotification('success', '✓ تم اختبار الاتصال بنجاح');
+    } catch (err) {
+      result.innerHTML = `<div style="text-align:center;padding:10px;color:var(--danger-neon);"><i class="fas fa-times-circle" style="font-size:1.5em;"></i><br><span>${err.message}</span></div>`;
+      showNotification('error', err.message);
+    }
+  }
+
+  // ======== SEND MESSAGE ========
+  async function sendMessageNow() {
+    const content = document.getElementById('messageContent').value;
+    if (!content) { showNotification('error', 'الرجاء كتابة محتوى الرسالة'); return; }
+    try {
+      const msgRes = await apiPost('/messages', { content, msg_type: 'text', parse_mode: 'HTML' });
+      const channels = await apiGet('/channels');
+      const accounts = await apiGet('/accounts');
+      if (!channels.length || !accounts.length) { showNotification('error', 'لا توجد قنوات أو حسابات'); return; }
+      const res = await apiPost('/messages/send', { message_id: msgRes.message_id, channel_id: channels[0].id, account_id: accounts[0].id });
+      showNotification('success', res.message || '✓ تم إرسال الرسالة بنجاح');
+    } catch (err) { showNotification('error', err.message); }
+  }
+
+  // ======== SCHEDULE SELECT ========
+  let selectedFrequency = null;
+  function selectSchedule(el) {
+    document.querySelectorAll('.schedule-option').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    selectedFrequency = el.querySelector('span:last-child').textContent.trim();
+  }
+
+  async function startSchedule() {
+    if (!selectedFrequency) { showNotification('error', 'اختر تردد الجدولة أولاً'); return; }
+    const content = document.getElementById('messageContent');
+    if (!content || !content.value.trim()) { showNotification('error', 'اكتب محتوى الرسالة أولاً'); return; }
+    try {
+      const msgRes = await apiPost('/messages', { content: content.value, msg_type: 'text' });
+      const channels = await apiGet('/channels');
+      const accounts = await apiGet('/accounts');
+      if (!channels.length || !accounts.length) { showNotification('error', 'لا توجد قنوات أو حسابات'); return; }
+      await apiPost('/schedule', { message_id: msgRes.message_id, channel_id: channels[0].id, account_id: accounts[0].id, frequency: selectedFrequency });
+      showNotification('success', '✓ تم بدء الجدولة بنجاح');
+    } catch (err) { showNotification('error', err.message); }
+  }
+
+  // ======== AI SUGGESTIONS ========
+  async function aiSuggestion(type) {
+    const input = document.getElementById('aiInput').value.trim() || 'إعلان تسويقي';
+    const resultDiv = document.getElementById('aiResult');
+    const content = document.getElementById('aiResultContent');
+    resultDiv.style.display = 'block';
+    content.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:var(--neon-purple);"></i> جاري التحليل...';
+    try {
+      const res = await apiPost('/ai/suggest', { type, text: input });
+      let displayText = '';
+      const r = res.result;
+      if (type === 'time') {
+        displayText = `⏰ ${r.recommendation}\n\n🎯 أفضل الأوقات:\n${r.bestTimes.map(t => '• ' + t).join('\n')}\n\n📊 زيادة متوقعة: ${r.expectedBoost}`;
+      } else if (type === 'hashtag') {
+        displayText = `🏷️ ${r.join('\n')}`;
+      } else if (type === 'translate') {
+        displayText = r.translated || r;
+      } else {
+        displayText = typeof r === 'string' ? r : r.text || JSON.stringify(r);
+      }
+      content.innerHTML = `<div style="margin-bottom:10px;font-weight:700;color:var(--neon-purple);"><i class="fas fa-lightbulb"></i> الاقتراح</div><div style="white-space:pre-wrap;">${displayText}</div>`;
+      showNotification('info', '🤖 تم إنشاء الاقتراح بنجاح');
+    } catch (err) {
+      content.innerHTML = `<div style="color:var(--danger-neon);">خطأ: ${err.message}</div>`;
+    }
+  }
+
+  // ======== ADMIN LOGIN ========
+  async function adminLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('adminUser').value;
+    const password = document.getElementById('adminPass').value;
+    try {
+      const res = await apiPost('/auth/login', { username, password });
+      AUTH_TOKEN = res.token;
+      localStorage.setItem('abyss_token', res.token);
+      document.getElementById('adminLoginForm').style.display = 'none';
+      document.getElementById('adminDashboard').style.display = 'block';
+      showNotification('success', '✓ ' + res.message);
+      Swal.fire({ icon: 'success', title: 'مرحباً بك', text: username, background: '#0a0a1a', color: '#e0e0ff', confirmButtonColor: '#8b5cf6', timer: 2000, showConfirmButton: false });
+      loadAdminPanel();
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'خطأ', text: err.message, background: '#0a0a1a', color: '#e0e0ff', confirmButtonColor: '#ff3355' });
+    }
+  }
+
+  function updateUIForAuth(user) {
+    localStorage.setItem('abyss_token', AUTH_TOKEN);
+    document.getElementById('adminLoginForm').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    showNotification('success', '✓ تم استعادة الجلسة');
+  }
+
+  async function loadAdminPanel() {
+    try {
+      const data = await apiGet('/stats/admin');
+      if (data.users) document.querySelector('#adminDashboard .users-count') && (document.querySelector('#adminDashboard .users-count').textContent = data.users.length);
+    } catch {}
+  }
+
+  // ======== PARTICLES.JS ========
+  function initParticles() {
+    if (typeof particlesJS === 'undefined') return;
+    particlesJS('particles-container', {
+      particles: {
+        number: { value: 60, density: { enable: true, value_area: 800 } },
+        color: { value: ['#00f3ff', '#8b5cf6', '#ff006e', '#00ff88'] },
+        shape: { type: 'circle' },
+        opacity: { value: 0.3, random: true },
+        size: { value: 3, random: true },
+        line_linked: { enable: true, distance: 150, color: '#00f3ff', opacity: 0.08, width: 1 },
+        move: { enable: true, speed: 1.2, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false }
+      },
+      interactivity: {
+        detect_on: 'canvas',
+        events: { onhover: { enable: true, mode: 'grab' }, onclick: { enable: true, mode: 'push' }, resize: true },
+        modes: { grab: { distance: 180, line_linked: { opacity: 0.15 } }, push: { particles_nb: 3 } }
+      },
+      retina_detect: true
+    });
+  }
+
+  // ======== THREE.JS ========
+  (function initThree() {
+    if (typeof THREE === 'undefined') return;
+    const container = document.getElementById('three-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+    const gridHelper = new THREE.GridHelper(20, 30, 0x00f3ff, 0x8b5cf6);
+    gridHelper.position.y = -2;
+    scene.add(gridHelper);
+    const geometry = new THREE.IcosahedronGeometry(1.2, 0);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.15 });
+    const sphere = new THREE.Mesh(geometry, material);
+    sphere.position.set(0, 0, -3);
+    scene.add(sphere);
+    const starsGeo = new THREE.BufferGeometry();
+    const starsCount = 800;
+    const posArray = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i++) posArray[i] = (Math.random() - 0.5) * 60;
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const starsMat = new THREE.PointsMaterial({ color: 0x00f3ff, size: 0.05, transparent: true, opacity: 0.4 });
+    const stars = new THREE.Points(starsGeo, starsMat);
+    scene.add(stars);
+    camera.position.z = 5;
+    let mouseX = 0, mouseY = 0;
+    document.addEventListener('mousemove', (e) => { mouseX = (e.clientX / window.innerWidth - 0.5) * 2; mouseY = (e.clientY / window.innerHeight - 0.5) * 2; });
+    function animate() {
+      requestAnimationFrame(animate);
+      sphere.rotation.x += 0.003; sphere.rotation.y += 0.005; stars.rotation.y += 0.0003;
+      gridHelper.rotation.x = Math.sin(Date.now() * 0.0002) * 0.02;
+      gridHelper.position.x = mouseX * 0.3; gridHelper.position.y = -2 + mouseY * 0.2;
+      renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+  })();
+
+  // ======== CHART.JS ========
+  let mainChart, pieChart, successChart, errorsChart;
+
+  function initCharts(stats) {
+    if (typeof Chart === 'undefined') return;
+    Chart.defaults.color = '#8888aa';
+    Chart.defaults.font.family = 'Cairo, sans-serif';
+    if (stats && stats.weeklyData) updateCharts(stats);
+    else createDefaultCharts();
+  }
+
+  function createDefaultCharts() {
+    makeMainChart([65, 78, 55, 92, 88, 70, 84], [45, 52, 38, 65, 55, 48, 60]);
+    makePieChart([35, 25, 20, 10, 10]);
+    makeSuccessChart([95, 97, 96, 98, 99, 98]);
+    makeErrorsChart([5, 3, 4, 2, 1, 3]);
+  }
+
+  function updateCharts(stats) {
+    if (!stats || !stats.weeklyData) return;
+    const days = stats.weeklyData.map(d => d.day);
+    const sent = stats.weeklyData.map(d => d.sent);
+    const errs = stats.weeklyData.map(d => d.errors);
+    if (mainChart) { mainChart.data.labels = days; mainChart.data.datasets[0].data = sent; mainChart.update(); }
+    else makeMainChart(sent, errs);
+    if (successChart) { successChart.data.datasets[0].data = [stats.successRate || 98]; successChart.update(); }
+    if (errorsChart) { errorsChart.data.datasets[0].data = [stats.logs?.errors || 0]; errorsChart.update(); }
+  }
+
+  function makeMainChart(sent, scheduled) {
+    const ctx = document.getElementById('mainChart');
+    if (!ctx) return;
+    if (mainChart) { mainChart.destroy(); }
+    mainChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'],
+        datasets: [
+          { label: 'تم الإرسال', data: sent, borderColor: '#00f3ff', backgroundColor: 'rgba(0,243,255,0.05)', fill: true, tension: 0.4, pointBackgroundColor: '#00f3ff', pointBorderColor: '#0a0a1a', pointBorderWidth: 2, pointRadius: 4 },
+          { label: 'المجدول', data: scheduled, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.05)', fill: true, tension: 0.4, pointBackgroundColor: '#8b5cf6', pointBorderColor: '#0a0a1a', pointBorderWidth: 2, pointRadius: 4 }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { boxWidth: 8, padding: 15 } } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.03)' } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true } } }
+    });
+  }
+
+  function makePieChart(data) {
+    const ctx = document.getElementById('pieChart');
+    if (!ctx) return;
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: ['نص', 'صور', 'فيديو', 'GIF', 'أخرى'], datasets: [{ data, backgroundColor: ['#00f3ff', '#8b5cf6', '#ff006e', '#00ff88', '#ffcc00'], borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 10, font: { size: 11 } } } } }
+    });
+  }
+
+  function makeSuccessChart(data) {
+    const ctx = document.getElementById('successChart');
+    if (!ctx) return;
+    if (successChart) successChart.destroy();
+    successChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'], datasets: [{ label: 'نجاح', data, backgroundColor: 'rgba(0,255,136,0.4)', borderColor: '#00ff88', borderWidth: 1, borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.03)' } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } }
+    });
+  }
+
+  function makeErrorsChart(data) {
+    const ctx = document.getElementById('errorsChart');
+    if (!ctx) return;
+    if (errorsChart) errorsChart.destroy();
+    errorsChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'], datasets: [{ label: 'أخطاء', data, backgroundColor: 'rgba(255,51,85,0.4)', borderColor: '#ff3355', borderWidth: 1, borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.03)' } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, beginAtZero: true } }, plugins: { legend: { display: false } } }
+    });
+  }
+
+  async function loadStats() {
+    try {
+      const stats = await apiGet('/stats');
+      document.getElementById('statTotalMessages').textContent = (stats.messages?.total || 0).toLocaleString();
+      document.getElementById('statTotalChannels').textContent = stats.channels?.total || '0';
+      document.getElementById('statTotalUsers').textContent = stats.users?.total || '0';
+      document.getElementById('statSpeed').textContent = Math.floor((stats.messages?.sent || 0) / 30) + '/ث';
+      if (stats.weeklyData) updateCharts(stats);
+    } catch {}
+  }
+
+  // ======== AOS ========
+  function initAOS() {
+    if (typeof AOS !== 'undefined') AOS.init({ duration: 600, once: true, offset: 50, disable: window.innerWidth < 576 });
+  }
+
+  // ======== LIVE COUNTERS ========
+  setInterval(async () => {
+    try {
+      const stats = await apiGet('/stats');
+      const sentEl = document.getElementById('statSent');
+      if (sentEl && stats.messages) sentEl.textContent = (stats.messages.sent || 0).toLocaleString();
+      const schedEl = document.getElementById('statScheduled');
+      if (schedEl && stats.messages) schedEl.textContent = stats.messages.scheduled || '0';
+    } catch {}
+  }, 15000);
+
+  // ======== MESSAGE TYPE CHIPS ========
+  document.querySelectorAll('.msg-type-chip').forEach(chip => {
+    chip.addEventListener('click', function() { this.classList.toggle('active'); });
+  });
+
+  // ======== INITIAL LOAD ========
+  if (AUTH_TOKEN) {
+    apiGet('/auth/me').then(r => updateUIForAuth(r.user)).catch(() => { AUTH_TOKEN = null; localStorage.removeItem('abyss_token'); });
+  }
+
+  console.log('%c ABYSS CONTROL X ', 'font-size:20px;font-weight:bold;background:#0a0a1a;color:#00f3ff;padding:10px 20px;border-radius:5px;border:1px solid #00f3ff;');
+  console.log('%c 𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐 ', 'font-size:14px;color:#8b5cf6;');
+  console.log('%c Backend API: ' + API_URL + '/api/health', 'font-size:12px;color:#8888aa;');
+</script>
+</body>
+</html>

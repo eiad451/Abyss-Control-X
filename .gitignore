@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.sqlite
+uploads/*
+!uploads/.gitkeep
+backups/*
+!backups/.gitkeep
+logs/*
+!logs/.gitkeep
