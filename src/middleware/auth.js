@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
-const db = require('../database/db');
+const { queryOne } = require('../database/db');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'abyss_control_x_jwt_secret';
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized', message: 'يرجى تسجيل الدخول أولاً' });
@@ -12,7 +12,7 @@ function authenticate(req, res, next) {
   try {
     const token = header.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.prepare('SELECT id, username, role, is_active FROM users WHERE id = ?').get(decoded.id);
+    const user = await queryOne('SELECT id, username, role, is_active FROM users WHERE id = $1', [decoded.id]);
     if (!user || !user.is_active) {
       return res.status(401).json({ error: 'Unauthorized', message: 'الحساب غير نشط' });
     }
@@ -24,9 +24,7 @@ function authenticate(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Forbidden', message: 'صلاحية مطلوبة: أدمن' });
-  }
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden', message: 'صلاحية مطلوبة: أدمن' });
   next();
 }
 

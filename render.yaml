@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: abyss-control-x
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: ADMIN_USERNAME
+        value: 𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐
+      - key: ADMIN_PASSWORD
+        value: VT_YC
+      - key: ADMIN_ID
+        value: 7933531187
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: abyss-db
+          property: connectionString
+
+databases:
+  - name: abyss-db
+    plan: free
+    region: frankfurt

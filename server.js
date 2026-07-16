@@ -6,7 +6,7 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 
-const db = require('./src/database/db');
+const { initialize } = require('./src/database/db');
 const scheduler = require('./src/services/scheduler');
 const { limiter } = require('./src/middleware/rateLimit');
 
@@ -22,25 +22,15 @@ const adminRoutes = require('./src/routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const uploadsDir = path.join(__dirname, 'uploads');
-const backupsDir = path.join(__dirname, 'backups');
-const dataDir = path.join(__dirname, 'data');
-const logsDir = path.join(__dirname, 'logs');
-
-for (const dir of [uploadsDir, backupsDir, dataDir, logsDir]) {
+for (const dir of ['uploads', 'backups', 'data', 'logs'].map(d => path.join(__dirname, d))) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
-}));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(morgan('combined', {
-  stream: fs.createWriteStream(path.join(logsDir, 'access.log'), { flags: 'a' }),
-}));
+app.use(morgan('combined', { stream: fs.createWriteStream(path.join(__dirname, 'logs/access.log'), { flags: 'a' }) }));
 app.use(morgan('dev'));
 app.use(limiter);
 
@@ -56,48 +46,35 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'online',
-    version: '1.0.0',
-    platform: 'Abyss Control X',
-    developer: '𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐',
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString(),
-  });
+  res.json({ status: 'online', version: '1.0.0', platform: 'Abyss Control X', developer: '𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐', uptime: process.uptime(), timestamp: new Date().toISOString() });
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.use((err, req, res, next) => {
   console.error('Unhandled Error:', err);
   res.status(500).json({ error: 'خطأ داخلي في الخادم', details: err.message });
 });
 
-scheduler.start();
+async function start() {
+  await initialize();
+  scheduler.start();
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log('');
+    console.log('  ╔═══════════════════════════════════════════╗');
+    console.log('  ║        ABYSS CONTROL X v1.0.0            ║');
+    console.log('  ║    Telegram Publishing Platform           ║');
+    console.log('  ║    𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐                        ║');
+    console.log('  ╚═══════════════════════════════════════════╝');
+    console.log('');
+    console.log(`  ✓ Server running on http://localhost:${PORT}`);
+    console.log(`  ✓ API: http://localhost:${PORT}/api/health`);
+    console.log('  ✓ Press Ctrl+C to stop');
+    console.log('');
+  });
+}
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('');
-  console.log('  ╔═══════════════════════════════════════════╗');
-  console.log('  ║        ABYSS CONTROL X v1.0.0            ║');
-  console.log('  ║    Telegram Publishing Platform           ║');
-  console.log('  ║    𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐                        ║');
-  console.log('  ╚═══════════════════════════════════════════╝');
-  console.log('');
-  console.log(`  ✓ Server running on http://localhost:${PORT}`);
-  console.log(`  ✓ API: http://localhost:${PORT}/api/health`);
-  console.log('  ✓ Press Ctrl+C to stop');
-  console.log('');
-});
+start();
 
-process.on('SIGINT', () => {
-  console.log('\n  Shutting down...');
-  scheduler.stopAll();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  scheduler.stopAll();
-  process.exit(0);
-});
+process.on('SIGINT', () => { console.log('\n  Shutting down...'); scheduler.stopAll(); process.exit(0); });
+process.on('SIGTERM', () => { scheduler.stopAll(); process.exit(0); });
