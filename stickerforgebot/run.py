@@ -93,6 +93,13 @@ def get_font(size):
             except: pass
     return ImageFont.load_default()
 
+def hex2rgb(h, d='#ffffff'):
+    h = (h or d).strip()
+    if not h.startswith('#'): h = '#' + h
+    h = h.lstrip('#')
+    if len(h) < 6: h = (h * 6)[:6]
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
 def make_sticker(text, cfg):
     fc, bg, fs = cfg.get('font_color','#ffffff'), cfg.get('bg_color','#1a1a2e'), cfg.get('font_size',200)
     sw, sc, sh, gr, rc = cfg.get('stroke_width',0), cfg.get('stroke_color','#000'), cfg.get('shadow_enabled',False), cfg.get('gradient_enabled',False), cfg.get('rounded_corners',0)
@@ -106,24 +113,24 @@ def make_sticker(text, cfg):
     cw, ch = int(min(max(tw+pad*2, 512),512)), int(min(max(th+pad*2, 512),512))
     if gr:
         try:
-            c1 = tuple(int(gc[0].lstrip('#')[i:i+2],16) for i in (0,2,4))
-            c2 = tuple(int(gc[1].lstrip('#')[i:i+2],16) for i in (0,2,4))
+            c1 = hex2rgb(gc[0], '#00f3ff')
+            c2 = hex2rgb(gc[1], '#8b5cf6')
             img = Image.new('RGBA', (cw,ch))
             for y in range(ch):
                 r = int(c1[0]*(1-y/ch)+c2[0]*(y/ch))
                 g = int(c1[1]*(1-y/ch)+c2[1]*(y/ch))
                 b = int(c1[2]*(1-y/ch)+c2[2]*(y/ch))
                 for x in range(cw): img.putpixel((x,y),(r,g,b,255))
-        except: img = Image.new('RGBA', (cw,ch), tuple(int(bg.lstrip('#')[i:i+2],16) for i in (0,2,4))+(255,))
-    else: img = Image.new('RGBA', (cw,ch), tuple(int(bg.lstrip('#')[i:i+2],16) for i in (0,2,4))+(255,))
+        except: img = Image.new('RGBA', (cw,ch), hex2rgb(bg, '#1a1a2e')+(255,))
+    else: img = Image.new('RGBA', (cw,ch), hex2rgb(bg, '#1a1a2e')+(255,))
     if rc > 0:
         m = Image.new('L', (cw,ch), 0)
         draw = ImageDraw.Draw(m)
         draw.rounded_rectangle((0,0,cw-1,ch-1), rc, fill=255)
         img.putalpha(m)
     draw = ImageDraw.Draw(img)
-    fcrgb = tuple(int(fc.lstrip('#')[i:i+2],16) for i in (0,2,4))
-    scrgb = tuple(int(sc.lstrip('#')[i:i+2],16) for i in (0,2,4))
+    fcrgb = hex2rgb(fc, '#ffffff')
+    scrgb = hex2rgb(sc, '#000000')
     total_h = sum((draw.textbbox((0,0), l, font=font)[3]-draw.textbbox((0,0), l, font=font)[1]+10) for l in lines)
     ty = (ch - total_h)//2
     for l in lines:
@@ -154,6 +161,11 @@ COLORS = [('أبيض','#ffffff'),('أسود','#000000'),('أحمر','#ff3355'),(
 BGS = [('غامق','#1a1a2e'),('أسود','#0a0a1a'),('أزرق غامق','#0d1b2a'),('بنفسجي','#1a0a2e'),('فاتح','#f0f0f0'),('أبيض','#ffffff'),('أحمر','#2a0a0a'),('أخضر','#0a2a1a')]
 color_kb = lambda: mk([[mkb(n,f'c_{c}') for n,c in COLORS[i:i+2]] for i in range(0,len(COLORS),2)]+[[mkb('🔙','back_cust')]])
 bg_kb = lambda: mk([[mkb(n,f'bg_{c}') for n,c in BGS[i:i+2]] for i in range(0,len(BGS),2)]+[[mkb('🔙','back_cust')]])
+
+async def safe_edit(msg, text, **kw):
+    try: return await msg.edit_text(text, **kw)
+    except Exception as e:
+        if 'message is not modified' not in str(e): raise
 
 async def add_user_db(id, uname, fn, ln):
     c = sqlite3.connect(str(DB_PATH))
@@ -198,7 +210,10 @@ async def help_cb(c: CallbackQuery):
     await c.answer()
 
 @router.callback_query(F.data == 'back_main')
-async def back(c: CallbackQuery):
+async def back(c: CallbackQuery, state: FSMContext):
+    uid = c.from_user.id
+    if uid in user_cfg: del user_cfg[uid]
+    await state.clear()
     await c.message.edit_text('✨ <b>StickerForgeBot</b>', reply_markup=main_kb()); await c.answer()
 
 @router.callback_query(F.data == 'back_cust')
