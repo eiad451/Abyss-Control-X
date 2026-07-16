@@ -932,6 +932,9 @@
   <div class="nav-item" data-section="ai" onclick="switchSection('ai', this)">
     <i class="fas fa-brain"></i> الذكاء الاصطناعي
   </div>
+  <div class="nav-item" data-section="osint" onclick="switchSection('osint', this)">
+    <i class="fas fa-user-secret"></i> OSINT
+  </div>
   <div class="nav-item" data-section="security" onclick="switchSection('security', this)">
     <i class="fas fa-shield-alt"></i> الحماية
   </div>
@@ -1490,6 +1493,51 @@
           <div class="quick-stat">
             <div class="num" style="color:var(--neon-purple);">85%</div>
             <div class="label">نسبة نجاح المحتوى</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OSINT ============ -->
+  <div class="page-section" id="page-osint">
+    <div class="section-neon-header">
+      <h3><i class="fas fa-user-secret neon-text-pink" style="margin-left:10px;"></i>Telegram OSINT</h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-6">
+        <div class="form-glass">
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-phone"></i> رقم الهاتف</label>
+            <input type="text" class="form-control" id="osintPhone" placeholder="+201234567890" style="direction:ltr;text-align:left;">
+          </div>
+          <div class="d-flex gap-2 mb-3">
+            <button class="neon-btn success flex-fill" onclick="osintResolvePhone()"><i class="fas fa-search"></i> بحث بالرقم</button>
+            <button class="neon-btn purple flex-fill" onclick="osintCheckPhone()"><i class="fas fa-check"></i> تحقق فقط</button>
+          </div>
+        </div>
+        <div class="form-glass mt-3">
+          <div class="mb-3">
+            <label class="form-label"><i class="fas fa-at"></i> يوزر تيليجرام</label>
+            <input type="text" class="form-control" id="osintUsername" placeholder="@username" style="direction:ltr;text-align:left;">
+          </div>
+          <button class="neon-btn w-100" onclick="osintByUsername()"><i class="fas fa-search"></i> بحث باليوزر</button>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="glass-card" id="osintResult" style="display:none;">
+          <div class="card-title"><i class="fas fa-user-check neon-text-pink"></i> نتيجة البحث</div>
+          <div id="osintResultContent"></div>
+        </div>
+        <div class="glass-card mt-3">
+          <div class="card-title"><i class="fas fa-info-circle"></i> عن الأداة</div>
+          <div style="color:var(--text-secondary);font-size:0.85em;line-height:1.8;">
+            <p><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:6px;"></i> تكشف إذا كان الرقم مسجل في تيليجرام</p>
+            <p><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:6px;"></i> تجلب الاسم والصورة الشخصية والبايو</p>
+            <p><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:6px;"></i> تظهر آخر ظهور وتاريخ الإنشاء</p>
+            <p><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:6px;"></i> تكشف الحسابات المزيفة والمخترقة</p>
+            <p><i class="fas fa-check-circle" style="color:var(--success-neon);margin-left:6px;"></i> تستخدم API تيليجرام الرسمي فقط</p>
+            <p><i class="fas fa-shield-alt" style="color:var(--neon-blue);margin-left:6px;"></i> للأغراض الأمنية والبحثية فقط</p>
           </div>
         </div>
       </div>
@@ -2259,6 +2307,95 @@
       if (schedEl && stats.messages) schedEl.textContent = stats.messages.scheduled || '0';
     } catch {}
   }, 15000);
+
+  // ======== OSINT FUNCTIONS ========
+  async function osintResolvePhone() {
+    const phone = document.getElementById('osintPhone').value.trim();
+    if (!phone) { showNotification('error', 'الرجاء إدخال رقم الهاتف'); return; }
+    const resultDiv = document.getElementById('osintResult');
+    const content = document.getElementById('osintResultContent');
+    resultDiv.style.display = 'block';
+    content.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin" style="font-size:2em;color:var(--neon-pink);"></i><br><span style="color:var(--text-secondary);">جاري البحث عن الرقم...</span></div>';
+    try {
+      const res = await apiPost('/osint/phone', { phone });
+      if (res.found) {
+        let html = `<div style="text-align:center;margin-bottom:15px;">
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--neon-pink),var(--neon-purple));margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:2em;"><i class="fas fa-user"></i></div>
+          <div style="font-size:1.2em;font-weight:700;color:#fff;">${res.firstName} ${res.lastName || ''}</div>
+          ${res.username ? `<div style="color:var(--neon-blue);">@${res.username}</div>` : ''}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
+        html += `<div class="verify-step passed"><span class="step-icon pass"><i class="fas fa-check-circle"></i></span><span>ID: ${res.id}</span></div>`;
+        html += `<div class="verify-step ${res.verified ? 'passed' : ''}"><span class="step-icon ${res.verified ? 'pass' : 'pending'}"><i class="fas fa-${res.verified ? 'check-circle' : 'times-circle'}"></i></span><span>موثق: ${res.verified ? 'نعم' : 'لا'}</span></div>`;
+        html += `<div class="verify-step ${res.scam ? 'failed' : 'passed'}"><span class="step-icon ${res.scam ? 'fail' : 'pass'}"><i class="fas fa-${res.scam ? 'times-circle' : 'check-circle'}"></i></span><span>احتيال: ${res.scam ? 'نعم' : 'لا'}</span></div>`;
+        html += `<div class="verify-step ${res.fake ? 'failed' : 'passed'}"><span class="step-icon ${res.fake ? 'fail' : 'pass'}"><i class="fas fa-${res.fake ? 'times-circle' : 'check-circle'}"></i></span><span>مزيف: ${res.fake ? 'نعم' : 'لا'}</span></div>`;
+        if (res.bio) html += `<div class="verify-step passed" style="grid-column:span 2;"><span class="step-icon pass"><i class="fas fa-info-circle"></i></span><span>البايو: ${res.bio}</span></div>`;
+        if (res.lastSeen) html += `<div class="verify-step passed" style="grid-column:span 2;"><span class="step-icon pass"><i class="fas fa-clock"></i></span><span>${res.lastSeen}</span></div>`;
+        html += `</div>`;
+        content.innerHTML = html;
+        showNotification('success', '✓ تم العثور على الحساب');
+      } else {
+        content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger-neon);"><i class="fas fa-exclamation-circle" style="font-size:2em;"></i><br><br><span style="color:#fff;">${res.message || 'لا يوجد حساب'}</span></div>`;
+        showNotification('error', res.message || 'لا يوجد حساب');
+      }
+    } catch (err) {
+      content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger-neon);"><i class="fas fa-times-circle" style="font-size:2em;"></i><br><br><span>${err.message}</span></div>`;
+      showNotification('error', err.message);
+    }
+  }
+
+  async function osintCheckPhone() {
+    const phone = document.getElementById('osintPhone').value.trim();
+    if (!phone) { showNotification('error', 'الرجاء إدخال رقم الهاتف'); return; }
+    try {
+      const res = await apiPost('/osint/check', { phone });
+      const div = document.getElementById('osintResult');
+      const content = document.getElementById('osintResultContent');
+      div.style.display = 'block';
+      if (res.registered) {
+        content.innerHTML = `<div style="text-align:center;padding:20px;"><span style="font-size:2em;color:var(--success-neon);"><i class="fas fa-check-circle"></i></span><br><br><span style="color:#fff;font-size:1.2em;">✓ الرقم <span class="neon-text-blue">${res.phone}</span> مسجل في تيليجرام</span></div>`;
+        showNotification('success', '✓ الرقم مسجل في تيليجرام');
+      } else {
+        content.innerHTML = `<div style="text-align:center;padding:20px;"><span style="font-size:2em;color:var(--danger-neon);"><i class="fas fa-times-circle"></i></span><br><br><span style="color:#fff;font-size:1.2em;">✗ الرقم ${res.phone} غير مسجل</span></div>`;
+        showNotification('error', 'الرقم غير مسجل في تيليجرام');
+      }
+    } catch (err) { showNotification('error', err.message); }
+  }
+
+  async function osintByUsername() {
+    const username = document.getElementById('osintUsername').value.trim();
+    if (!username) { showNotification('error', 'الرجاء إدخال اسم المستخدم'); return; }
+    const resultDiv = document.getElementById('osintResult');
+    const content = document.getElementById('osintResultContent');
+    resultDiv.style.display = 'block';
+    content.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin" style="font-size:2em;color:var(--neon-pink);"></i><br><span style="color:var(--text-secondary);">جاري البحث...</span></div>';
+    try {
+      const res = await apiPost('/osint/username', { username });
+      if (res.found) {
+        let html = `<div style="text-align:center;margin-bottom:15px;">
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple));margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:2em;"><i class="fas fa-user"></i></div>
+          <div style="font-size:1.2em;font-weight:700;color:#fff;">${res.firstName} ${res.lastName || ''}</div>
+          <div style="color:var(--neon-blue);">@${res.username}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
+        html += `<div class="verify-step passed"><span class="step-icon pass"><i class="fas fa-check-circle"></i></span><span>ID: ${res.id}</span></div>`;
+        html += `<div class="verify-step ${res.verified ? 'passed' : ''}"><span class="step-icon ${res.verified ? 'pass' : 'pending'}"><i class="fas fa-${res.verified ? 'check-circle' : 'times-circle'}"></i></span><span>موثق: ${res.verified ? 'نعم' : 'لا'}</span></div>`;
+        html += `<div class="verify-step ${res.bot ? 'failed' : 'passed'}"><span class="step-icon ${res.bot ? 'fail' : 'pass'}"><i class="fas fa-${res.bot ? 'times-circle' : 'check-circle'}"></i></span><span>بوت: ${res.bot ? 'نعم' : 'لا'}</span></div>`;
+        if (res.scam) html += `<div class="verify-step failed"><span class="step-icon fail"><i class="fas fa-times-circle"></i></span><span>⚠️ حساب احتيال!</span></div>`;
+        if (res.bio) html += `<div class="verify-step passed" style="grid-column:span 2;"><span class="step-icon pass"><i class="fas fa-info-circle"></i></span><span>البايو: ${res.bio}</span></div>`;
+        if (res.lastSeen) html += `<div class="verify-step passed" style="grid-column:span 2;"><span class="step-icon pass"><i class="fas fa-clock"></i></span><span>${res.lastSeen}</span></div>`;
+        html += `</div>`;
+        content.innerHTML = html;
+        showNotification('success', '✓ تم العثور على المستخدم');
+      } else {
+        content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger-neon);"><i class="fas fa-exclamation-circle" style="font-size:2em;"></i><br><br><span style="color:#fff;">${res.message || 'المستخدم غير موجود'}</span></div>`;
+        showNotification('error', res.message || 'المستخدم غير موجود');
+      }
+    } catch (err) {
+      content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger-neon);"><i class="fas fa-times-circle" style="font-size:2em;"></i><br><br><span>${err.message}</span></div>`;
+      showNotification('error', err.message);
+    }
+  }
 
   // ======== MESSAGE TYPE CHIPS ========
   document.querySelectorAll('.msg-type-chip').forEach(chip => {

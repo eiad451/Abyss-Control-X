@@ -18,6 +18,7 @@ const scheduleRoutes = require('./src/routes/schedule');
 const aiRoutes = require('./src/routes/ai');
 const statsRoutes = require('./src/routes/stats');
 const adminRoutes = require('./src/routes/admin');
+const osintRoutes = require('./src/routes/osint');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,7 @@ app.use('/api/schedule', scheduleRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/osint', osintRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'online', version: '1.0.0', platform: 'Abyss Control X', developer: '𖤐 𝕬𝖇𝖞𝖘𝖘 𖤐', uptime: process.uptime(), timestamp: new Date().toISOString() });
