@@ -5,6 +5,10 @@ node_modules/
 *.sqlite-shm
 *.sqlite-wal
 data/osint_session.json
+stickerforgebot/fonts/
+stickerforgebot/temp/
+stickerforgebot/__pycache__/
+*.pyc
 uploads/*
 !uploads/.gitkeep
 backups/*
